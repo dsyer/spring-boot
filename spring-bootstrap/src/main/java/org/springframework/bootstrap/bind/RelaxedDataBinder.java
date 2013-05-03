@@ -16,6 +16,7 @@
 
 package org.springframework.bootstrap.bind;
 
+import java.beans.PropertyDescriptor;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,9 @@ import org.springframework.validation.DataBinder;
 /**
  * Binder implementation that allows caller to bind to maps and also allows property names
  * to match a bit loosely (if underscores or dashes are removed and replaced with camel
- * case for example).
+ * case for example). If binding to a map, or if any nested properties are maps, they are
+ * assumed to be <code>Map<String,Object></code>, with nested values of the same type (and
+ * null values are initialized to a LinkedHashMap).
  * 
  * @author Dave Syer
  */
@@ -46,15 +49,6 @@ public class RelaxedDataBinder extends DataBinder {
 		super(wrapTarget(target));
 	}
 
-	private static Object wrapTarget(Object target) {
-		if (target instanceof Map) {
-			@SuppressWarnings("unchecked")
-			Map<String, Object> map = (Map<String, Object>) target;
-			target = new MapHolder(map);
-		}
-		return target;
-	}
-
 	/**
 	 * @param target the target into which properties are bound
 	 * @param namePrefix An optional prefix to be used when reading properties
@@ -65,10 +59,37 @@ public class RelaxedDataBinder extends DataBinder {
 		this.namePrefix = (StringUtils.hasLength(namePrefix) ? namePrefix + "." : null);
 	}
 
+	private static Object wrapTarget(Object target) {
+		if (target instanceof Map) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> map = (Map<String, Object>) target;
+			target = new MapHolder(map);
+		}
+		return target;
+	}
+
 	@Override
 	protected void doBind(MutablePropertyValues propertyValues) {
-		propertyValues = modifyProperties(propertyValues, getTarget());
+		Object target = getTarget();
+		if (isDirectFieldAccess(target)) {
+			try {
+				initDirectFieldAccess();
+			} catch (IllegalStateException e) {
+				// Ignore it - someone already set up field access
+			}
+		}
+		propertyValues = modifyProperties(propertyValues, target);
 		super.doBind(propertyValues);
+	}
+
+	private boolean isDirectFieldAccess(Object target) {
+		PropertyDescriptor[] propertyDescriptors = new BeanWrapperImpl(target)
+				.getPropertyDescriptors();
+		if (propertyDescriptors.length == 1) {
+			// It's for getClass()
+			return true;
+		}
+		return false;
 	}
 
 	/**

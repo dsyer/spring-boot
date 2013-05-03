@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.beans.MutablePropertyValues;
+import org.springframework.beans.NotWritablePropertyException;
 import org.springframework.context.support.StaticMessageSource;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -58,6 +59,8 @@ public class RelaxedDataBinderTests {
 	public ExpectedException expected = ExpectedException.none();
 
 	private ConversionService conversionService;
+
+	private boolean fieldAccess = false;
 
 	@Test
 	public void testBindString() throws Exception {
@@ -85,6 +88,34 @@ public class RelaxedDataBinderTests {
 		VanillaTarget target = new VanillaTarget();
 		bind(target, "foo: bar\n" + "value: 123");
 		assertEquals(123, target.getValue());
+	}
+
+	@Test
+	public void testBindToFields() throws Exception {
+		this.fieldAccess = true;
+		FieldTarget target = new FieldTarget();
+		bind(target, "foo: bar\nvalue: 123");
+		assertEquals("bar", target.foo);
+		assertEquals(123, target.value);
+	}
+
+	@Test
+	public void testBindToFieldsAutomatically() throws Exception {
+		FieldTarget target = new FieldTarget();
+		bind(target, "foo: bar\nvalue: 123");
+		assertEquals("bar", target.foo);
+		assertEquals(123, target.value);
+	}
+
+	// This doesn't work
+	@Test(expected = NotWritablePropertyException.class)
+	public void testBindToNestedFields() throws Exception {
+		NestedFieldTarget target = new NestedFieldTarget();
+		bind(target, "foo: bar\nvalue: 123\nnested.foo: spam\nnested.nested.foo: crap");
+		assertEquals("bar", target.foo);
+		assertEquals("spam", target.nested.foo);
+		assertEquals("crap", target.nested.nested.foo);
+		assertEquals(123, target.value);
 	}
 
 	@Test
@@ -216,6 +247,9 @@ public class RelaxedDataBinderTests {
 		validatorFactoryBean.afterPropertiesSet();
 		binder.setValidator(validatorFactoryBean);
 		binder.setConversionService(this.conversionService);
+		if (this.fieldAccess) {
+			binder.initDirectFieldAccess();
+		}
 		binder.bind(new MutablePropertyValues(properties));
 		binder.validate();
 
@@ -312,6 +346,24 @@ public class RelaxedDataBinderTests {
 		public void setNested(VanillaTarget nested) {
 			this.nested = nested;
 		}
+	}
+
+	public static class FieldTarget {
+
+		public String foo;
+
+		public int value;
+
+	}
+
+	public static class NestedFieldTarget {
+
+		public String foo;
+
+		public int value;
+
+		public NestedFieldTarget nested;
+
 	}
 
 	public static class VanillaTarget {
