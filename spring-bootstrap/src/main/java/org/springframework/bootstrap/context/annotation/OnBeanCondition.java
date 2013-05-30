@@ -16,7 +16,14 @@
 
 package org.springframework.bootstrap.context.annotation;
 
+import java.util.Collection;
+import java.util.HashSet;
+
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.core.type.AnnotationMetadata;
 
 /**
  * {@link Condition} that checks that specific beans are present.
@@ -30,4 +37,33 @@ class OnBeanCondition extends AbstractOnBeanCondition {
 	protected Class<?> annotationClass() {
 		return ConditionalOnBean.class;
 	}
+
+	@Override
+	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+		boolean result = super.matches(context, metadata);
+		if (metadata instanceof AnnotationMetadata) {
+			AnnotationMetadata typeMetaData = (AnnotationMetadata) metadata;
+			String key = typeMetaData.getClassName();
+			Collection<String> deferred = getBeansBeingDeferred(context.getBeanFactory());
+			if (deferred.contains(key)) {
+				return result;
+			}
+			deferred.add(key);
+			// defer decision on this bean until the next time we are asked
+			return true;
+		}
+		return result;
+	}
+
+	private Collection<String> getBeansBeingDeferred(
+			ConfigurableListableBeanFactory beanFactory) {
+		String name = OnBeanCondition.class.getName();
+		if (!beanFactory.containsSingleton(name)) {
+			beanFactory.registerSingleton(name, new HashSet<String>());
+		}
+		@SuppressWarnings("unchecked")
+		Collection<String> result = (Collection<String>) beanFactory.getSingleton(name);
+		return result;
+	}
+
 }

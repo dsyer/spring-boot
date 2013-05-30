@@ -15,7 +15,6 @@
  */
 package org.springframework.bootstrap.context.annotation;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -30,7 +29,6 @@ import static org.junit.Assert.assertTrue;
  * @author Dave Syer
  * 
  */
-@Ignore
 public class OnBeanConditionTests {
 
 	private AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -54,6 +52,27 @@ public class OnBeanConditionTests {
 	@Test
 	public void testClassOnBeanCondition() {
 		this.context.register(OnBeanClassConfiguration.class, FooConfiguration.class);
+		this.context.refresh();
+		assertTrue(this.context.containsBean("bar"));
+		assertEquals("bar", this.context.getBean("bar"));
+	}
+
+	@Test
+	public void testConfigurationClassOnBeanCondition() {
+		this.context.register(OnConfigurationClassConfiguration.class,
+				FooConfiguration.class);
+		this.context.refresh();
+		assertTrue(this.context.containsBean("bar"));
+		assertEquals("bar", this.context.getBean("bar"));
+	}
+
+	@Test
+	// Because the condition is on a @Bean method its enclosing @Configuration has a
+	// chance to be parsed. This test passes but if you reverse the order of registration
+	// it will fail.
+	public void testBeanMethodClassOnBeanCondition() {
+		this.context.register(FooConfiguration.class,
+				OnBeanClassMethodConfiguration.class);
 		this.context.refresh();
 		assertTrue(this.context.containsBean("bar"));
 		assertEquals("bar", this.context.getBean("bar"));
@@ -87,6 +106,24 @@ public class OnBeanConditionTests {
 	@Configuration
 	@ConditionalOnBean(String.class)
 	protected static class OnBeanClassConfiguration {
+		@Bean
+		public String bar() {
+			return "bar";
+		}
+	}
+
+	@Configuration
+	protected static class OnBeanClassMethodConfiguration {
+		@ConditionalOnBean(String.class)
+		@Bean
+		public String bar() {
+			return "bar";
+		}
+	}
+
+	@Configuration
+	@ConditionalOnBean(FooConfiguration.class)
+	protected static class OnConfigurationClassConfiguration {
 		@Bean
 		public String bar() {
 			return "bar";
