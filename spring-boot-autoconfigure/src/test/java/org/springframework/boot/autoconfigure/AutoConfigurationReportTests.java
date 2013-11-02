@@ -30,7 +30,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.jms.JmsTemplateAutoConfiguration;
 import org.springframework.boot.autoconfigure.report.AutoConfigurationReport;
-import org.springframework.boot.autoconfigure.report.BootCreatedBeanInfo;
+import org.springframework.boot.autoconfigure.report.CreatedBeanInfo;
 import org.springframework.boot.autoconfigure.report.EnableAutoConfigurationReport;
 import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -44,7 +44,7 @@ import org.springframework.jms.core.JmsTemplate;
  *
  * @author Greg Turnquist
  */
-public class AutoConfigurationReportTest {
+public class AutoConfigurationReportTests {
 
 	private AnnotationConfigApplicationContext context;
 
@@ -57,9 +57,9 @@ public class AutoConfigurationReportTest {
 		AutoConfigurationReport autoconfigSettings = this.context
 				.getBean(AutoConfigurationReport.class);
 
-		Set<BootCreatedBeanInfo> beansBootCreated = autoconfigSettings.getBeansBootCreated();
-		Set<String> beanNamesBootCreated = autoconfigSettings.getBeanNamesBootCreated();
-		Set<Class<?>> beanTypesBootCreated = autoconfigSettings.getBeanTypesBootCreated();
+		Set<CreatedBeanInfo> beansBootCreated = autoconfigSettings.getBeansCreated();
+		Set<String> beanNamesBootCreated = autoconfigSettings.getBeanNamesCreated();
+		Set<Class<?>> beanTypesBootCreated = autoconfigSettings.getBeanTypesCreated();
 
 		assertEquals(1, beansBootCreated.size());
 		assertEquals(1, beanNamesBootCreated.size());
@@ -71,7 +71,7 @@ public class AutoConfigurationReportTest {
 
 		boolean foundPropertySourcesPlaceHolderConfigurer = false;
 		int totalDecisions = 0;
-		for (BootCreatedBeanInfo item : beansBootCreated) {
+		for (CreatedBeanInfo item : beansBootCreated) {
 			for (String decision : item.getDecisions()) {
 				totalDecisions += 1;
 				if (decision.contains("propertySourcesPlaceholderConfigurer matched")) {
@@ -91,9 +91,9 @@ public class AutoConfigurationReportTest {
 		AutoConfigurationReport autoconfigSettings = this.context
 				.getBean(AutoConfigurationReport.class);
 
-		Set<BootCreatedBeanInfo> beansBootCreated = autoconfigSettings.getBeansBootCreated();
-		Set<String> beanNamesBootCreated = autoconfigSettings.getBeanNamesBootCreated();
-		Set<Class<?>> beanTypesBootCreated = autoconfigSettings.getBeanTypesBootCreated();
+		Set<CreatedBeanInfo> beansBootCreated = autoconfigSettings.getBeansCreated();
+		Set<String> beanNamesBootCreated = autoconfigSettings.getBeanNamesCreated();
+		Set<Class<?>> beanTypesBootCreated = autoconfigSettings.getBeanTypesCreated();
 
 		assertEquals(3, beansBootCreated.size());
 		assertEquals(3, beanNamesBootCreated.size());
@@ -112,7 +112,7 @@ public class AutoConfigurationReportTest {
 		boolean foundAmqpAdminBeanCondition = false;
 		boolean foundRabbitTemplateCondition = false;
 		int totalDecisions = 0;
-		for (BootCreatedBeanInfo item : beansBootCreated) {
+		for (CreatedBeanInfo item : beansBootCreated) {
 			for (String decision : item.getDecisions()) {
 				totalDecisions += 1;
 				if (decision.contains("RabbitConnectionFactoryCreator matched")) {

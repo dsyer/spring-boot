@@ -18,12 +18,15 @@ package org.springframework.boot.autoconfigure.report;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.condition.Outcome;
 import org.springframework.context.ApplicationContext;
@@ -33,73 +36,101 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 
 /**
- * Bean used to gather autoconfiguration decisions, and then generate a collection
- * of info for beans that were created by Boot as well as situations where the outcome
- * was negative.
- *
+ * Bean used to gather autoconfiguration decisions, and then generate a collection of info
+ * for beans that were created as well as situations where the conditional outcome was
+ * negative.
+ * 
  * @author Greg Turnquist
+ * @author Dave Syer
  */
-public class AutoConfigurationReport implements ApplicationContextAware, ApplicationListener<ContextRefreshedEvent> {
+public class AutoConfigurationReport implements ApplicationContextAware,
+		ApplicationListener<ContextRefreshedEvent> {
 
-	private Set<BootCreatedBeanInfo> beansBootCreated = new HashSet<BootCreatedBeanInfo>();
-	private Map<String, List<AutoConfigurationDecision>> autoconfigurationDecisions =
-			new HashMap<String, List<AutoConfigurationDecision>>();
-	private Map<String, List<String>> positive = new HashMap<String, List<String>>();
-	private Map<String, List<String>> negative = new HashMap<String, List<String>>();
+	private static Log logger = LogFactory.getLog(AutoConfigurationReport.class);
+
+	private Set<CreatedBeanInfo> beansCreated = new LinkedHashSet<CreatedBeanInfo>();
+	private Map<String, List<AutoConfigurationDecision>> autoconfigurationDecisions = new LinkedHashMap<String, List<AutoConfigurationDecision>>();
+	private Map<String, List<String>> positive = new LinkedHashMap<String, List<String>>();
+	private Map<String, List<String>> negative = new LinkedHashMap<String, List<String>>();
 	private ApplicationContext context;
+	private boolean initialized = false;
 
 	public static void registerDecision(ConditionContext context, String message,
 			String classOrMethodName, Outcome outcome) {
-		for (String beanName : context.getBeanFactory().getBeanDefinitionNames()) {
-			if (beanName.equals("autoConfigurationReport")) {
-				AutoConfigurationReport autoconfigurationReport = context
-						.getBeanFactory().getBean(AutoConfigurationReport.class);
-				autoconfigurationReport.registerDecision(message, classOrMethodName, outcome);
-			}
+		if (context.getBeanFactory().containsBeanDefinition("autoConfigurationReport")) {
+			AutoConfigurationReport autoconfigurationReport = context.getBeanFactory()
+					.getBean(AutoConfigurationReport.class);
+			autoconfigurationReport.registerDecision(message, classOrMethodName, outcome);
 		}
 	}
 
-	private void registerDecision(String message, String classOrMethodName, Outcome outcome) {
-		AutoConfigurationDecision decision = new AutoConfigurationDecision(message, classOrMethodName, outcome);
+	private void registerDecision(String message, String classOrMethodName,
+			Outcome outcome) {
+		AutoConfigurationDecision decision = new AutoConfigurationDecision(message,
+				classOrMethodName, outcome);
 		if (!this.autoconfigurationDecisions.containsKey(classOrMethodName)) {
-			this.autoconfigurationDecisions.put(classOrMethodName, new ArrayList<AutoConfigurationDecision>());
+			this.autoconfigurationDecisions.put(classOrMethodName,
+					new ArrayList<AutoConfigurationDecision>());
 		}
 		this.autoconfigurationDecisions.get(classOrMethodName).add(decision);
 	}
 
-	public Set<BootCreatedBeanInfo> getBeansBootCreated() {
-		return this.beansBootCreated;
+	public Set<CreatedBeanInfo> getBeansCreated() {
+		return this.beansCreated;
 	}
 
 	public Map<String, List<String>> getNegativeDecisions() {
 		return this.negative;
 	}
 
-	public Set<Class<?>> getBeanTypesBootCreated() {
-		Set<Class<?>> beanTypesBootCreated = new HashSet<Class<?>>();
-		for (BootCreatedBeanInfo bootCreatedBeanInfo : this.getBeansBootCreated()) {
-			beanTypesBootCreated.add(bootCreatedBeanInfo.getBeanType());
+	public Set<Class<?>> getBeanTypesCreated() {
+		Set<Class<?>> beanTypesCreated = new HashSet<Class<?>>();
+		for (CreatedBeanInfo bootCreatedBeanInfo : this.getBeansCreated()) {
+			beanTypesCreated.add(bootCreatedBeanInfo.getBeanType());
 		}
-		return beanTypesBootCreated;
+		return beanTypesCreated;
 	}
 
-	public Set<String> getBeanNamesBootCreated() {
-		Set<String> beanNamesBootCreated = new HashSet<String>();
-		for (BootCreatedBeanInfo bootCreatedBeanInfo : this.getBeansBootCreated()) {
-			beanNamesBootCreated.add(bootCreatedBeanInfo.getBeanName());
+	public Set<String> getBeanNamesCreated() {
+		Set<String> beanNamesCreated = new HashSet<String>();
+		for (CreatedBeanInfo bootCreatedBeanInfo : this.getBeansCreated()) {
+			beanNamesCreated.add(bootCreatedBeanInfo.getName());
 		}
-		return beanNamesBootCreated;
+		return beanNamesCreated;
 	}
 
 	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+	public void setApplicationContext(ApplicationContext applicationContext)
+			throws BeansException {
 		this.context = applicationContext;
 	}
 
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
-		splitDecisionsIntoPositiveAndNegative();
-		scanPositiveDecisionsForBeansBootCreated();
+		initialize();
+	}
+
+	public void initialize() {
+		if (!this.initialized) {
+			synchronized (this) {
+				if (!this.initialized) {
+					this.initialized = true;
+					splitDecisionsIntoPositiveAndNegative();
+					scanPositiveDecisionsForBeansBootCreated();
+					if (this.context.getEnvironment().getProperty("debug", Boolean.class,
+							false)) {
+						logger.info("Created beans:");
+						for (CreatedBeanInfo info : this.beansCreated) {
+							logger.info(info);
+						}
+						logger.info("Negative decisions:");
+						for (String key : this.negative.keySet()) {
+							logger.info(key + ": " + this.negative.get(key));
+						}
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -109,50 +140,58 @@ public class AutoConfigurationReport implements ApplicationContextAware, Applica
 	private synchronized void splitDecisionsIntoPositiveAndNegative() {
 		for (String key : this.autoconfigurationDecisions.keySet()) {
 			boolean match = true;
-			for (AutoConfigurationDecision decision : this.autoconfigurationDecisions.get(key)) {
+			for (AutoConfigurationDecision decision : this.autoconfigurationDecisions
+					.get(key)) {
 				if (!decision.getOutcome().isMatch()) {
 					match = false;
 				}
 			}
 			if (match) {
-				if (!positive.containsKey(key)) {
-					positive.put(key, new ArrayList<String>());
+				if (!this.positive.containsKey(key)) {
+					this.positive.put(key, new ArrayList<String>());
 				}
-				for (AutoConfigurationDecision decision : this.autoconfigurationDecisions.get(key)) {
-					positive.get(key).add(decision.getMessage());
+				for (AutoConfigurationDecision decision : this.autoconfigurationDecisions
+						.get(key)) {
+					this.positive.get(key).add(decision.getMessage());
 				}
-			} else {
-				if (!negative.containsKey(key)) {
-					negative.put(key, new ArrayList<String>());
+			}
+			else {
+				if (!this.negative.containsKey(key)) {
+					this.negative.put(key, new ArrayList<String>());
 				}
-				for (AutoConfigurationDecision decision : this.autoconfigurationDecisions.get(key)) {
-					negative.get(key).add(decision.getMessage());
+				for (AutoConfigurationDecision decision : this.autoconfigurationDecisions
+						.get(key)) {
+					this.negative.get(key).add(decision.getMessage());
 				}
 			}
 		}
 	}
 
 	/**
-	 * Scan all the decisions based on successful outcome, and
-	 * try to find the corresponding beans Boot created.
+	 * Scan all the decisions based on successful outcome, and try to find the
+	 * corresponding beans Boot created.
 	 */
 	private synchronized void scanPositiveDecisionsForBeansBootCreated() {
 		for (String key : this.positive.keySet()) {
-			for (AutoConfigurationDecision decision : this.autoconfigurationDecisions.get(key)) {
-				for (String beanName : context.getBeanDefinitionNames()) {
-					Object bean = context.getBean(beanName);
-					if (decision.getMessage().contains(beanName) && decision.getMessage().contains("matched")) {
+			for (AutoConfigurationDecision decision : this.autoconfigurationDecisions
+					.get(key)) {
+				for (String beanName : this.context.getBeanDefinitionNames()) {
+					Object bean = this.context.getBean(beanName);
+					if (decision.getMessage().contains(beanName)
+							&& decision.getMessage().contains("matched")) {
 						boolean anyMethodsAreBeans = false;
 						for (Method method : bean.getClass().getMethods()) {
-							if (context.containsBean(method.getName())) {
-								this.beansBootCreated.add(new BootCreatedBeanInfo(method.getName(),
-										method.getReturnType(), this.positive.get(key)));
+							if (this.context.containsBean(method.getName())) {
+								this.beansCreated.add(new CreatedBeanInfo(method
+										.getName(), method.getReturnType(), this.positive
+										.get(key)));
 								anyMethodsAreBeans = true;
 							}
 						}
 
 						if (!anyMethodsAreBeans) {
-							this.beansBootCreated.add(new BootCreatedBeanInfo(beanName, bean, this.positive.get(key)));
+							this.beansCreated.add(new CreatedBeanInfo(beanName, bean,
+									this.positive.get(key)));
 						}
 					}
 				}

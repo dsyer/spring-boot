@@ -18,12 +18,11 @@ package org.springframework.boot.autoconfigure.report;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableMBeanExport;
 
 /**
- * Configuration to wire up a {@link AutoConfigurationReport}. It's activated by
- * the {@link EnableAutoConfigurationReport} annotation.
- *
+ * Configuration to wire up a {@link AutoConfigurationReport}. It's activated by the
+ * {@link EnableAutoConfigurationReport} annotation.
+ * 
  * @author Greg Turnquist
  */
 @Configuration

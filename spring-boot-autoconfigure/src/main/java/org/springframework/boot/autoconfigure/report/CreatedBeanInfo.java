@@ -20,43 +20,44 @@ import java.util.List;
 
 /**
  * A collection of data about a bean created by Boot
- *
+ * 
  * @author Greg Turnquist
  */
-public class BootCreatedBeanInfo {
+public class CreatedBeanInfo {
 
-	private final String beanName;
-	private final Class<?> beanType;
+	private final String name;
+	private final Class<?> type;
 	private final List<String> decisions;
 
-	public BootCreatedBeanInfo(String beanName, Object bean, List<String> decisions) {
-		this.beanName = beanName;
-		this.beanType = bean.getClass();
+	public CreatedBeanInfo(String beanName, Object bean, List<String> decisions) {
+		this.name = beanName;
+		this.type = bean.getClass();
 		this.decisions = decisions;
 	}
 
-	public BootCreatedBeanInfo(String beanName, Class<?> declaredBeanType, List<String> decisions) {
-		this.beanName = beanName;
-		this.beanType = declaredBeanType;
+	public CreatedBeanInfo(String beanName, Class<?> declaredBeanType,
+			List<String> decisions) {
+		this.name = beanName;
+		this.type = declaredBeanType;
 		this.decisions = decisions;
 	}
 
 	@Override
 	public String toString() {
-		return "BootCreatedBeanInfo{" + "beanName='" + beanName + '\'' + ", beanType=" + beanType
-				+ ", decisions=" + decisions + '}';
+		return "{" + "name='" + this.name + '\'' + ", type=" + this.type + ", decisions="
+				+ this.decisions + '}';
 	}
 
-	public String getBeanName() {
-		return beanName;
+	public String getName() {
+		return this.name;
 	}
 
 	public Class<?> getBeanType() {
-		return beanType;
+		return this.type;
 	}
 
 	public List<String> getDecisions() {
-		return decisions;
+		return this.decisions;
 	}
 
 	@Override
@@ -66,10 +67,10 @@ public class BootCreatedBeanInfo {
 		if (o == null || getClass() != o.getClass())
 			return false;
 
-		BootCreatedBeanInfo bootCreatedBeanInfo = (BootCreatedBeanInfo) o;
+		CreatedBeanInfo bootCreatedBeanInfo = (CreatedBeanInfo) o;
 
-		if (beanName != null ? !beanName.equals(bootCreatedBeanInfo.beanName)
-				: bootCreatedBeanInfo.beanName != null)
+		if (this.name != null ? !this.name.equals(bootCreatedBeanInfo.name)
+				: bootCreatedBeanInfo.name != null)
 			return false;
 
 		return true;
@@ -77,6 +78,6 @@ public class BootCreatedBeanInfo {
 
 	@Override
 	public int hashCode() {
-		return beanName != null ? beanName.hashCode() : 0;
+		return this.name != null ? this.name.hashCode() : 0;
 	}
 }
