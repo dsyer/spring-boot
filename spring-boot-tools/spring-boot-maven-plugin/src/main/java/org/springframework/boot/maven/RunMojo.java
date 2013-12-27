@@ -18,6 +18,7 @@ package org.springframework.boot.maven;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -37,6 +38,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.springframework.boot.loader.tools.MainClassFinder;
+
+import com.sun.tools.attach.VirtualMachine;
 
 /**
  * MOJO that can be used to run a executable archive application directly from Maven.
@@ -62,6 +65,12 @@ public class RunMojo extends AbstractMojo {
 	 */
 	@Parameter(property = "run.addResources", defaultValue = "true")
 	private boolean addResources;
+
+	/**
+	 * Path to agent jar.
+	 */
+	@Parameter(property = "run.agent")
+	private File agent;
 
 	/**
 	 * Arguments that should be passed to the application.
@@ -92,6 +101,28 @@ public class RunMojo extends AbstractMojo {
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		final String startClassName = getStartClass();
+		if (this.agent != null) {
+			attach(this.agent, startClassName);
+		}
+		run(startClassName);
+	}
+
+	private void attach(File agent, String startClassName) {
+		String nameOfRunningVM = ManagementFactory.getRuntimeMXBean().getName();
+		int p = nameOfRunningVM.indexOf('@');
+		String pid = nameOfRunningVM.substring(0, p);
+
+		try {
+			VirtualMachine vm = VirtualMachine.attach(pid);
+			vm.loadAgent(agent.getAbsolutePath());
+			vm.detach();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void run(String startClassName) throws MojoExecutionException {
 		IsolatedThreadGroup threadGroup = new IsolatedThreadGroup(startClassName);
 		Thread launchThread = new Thread(threadGroup, new LaunchRunner(startClassName,
 				this.arguments), startClassName + ".main()");
