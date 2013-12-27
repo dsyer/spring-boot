@@ -33,6 +33,14 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<dependencies>
+					<dependency>
+						<groupId>org.springsource.springloaded</groupId>
+						<!-- FIXME: this doesn't work because it's not the agent jar -->
+						<artifactId>springloaded-core</artifactId>
+						<version>1.1.4</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 		</plugins>
 	</build>

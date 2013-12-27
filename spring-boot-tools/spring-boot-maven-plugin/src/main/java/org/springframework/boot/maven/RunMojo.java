@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -100,14 +101,32 @@ public class RunMojo extends AbstractMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		final String startClassName = getStartClass();
+		findAgent();
 		if (this.agent != null) {
-			attach(this.agent, startClassName);
+			getLog().info("Attaching: " + this.agent);
+			attach(this.agent);
 		}
+		final String startClassName = getStartClass();
 		run(startClassName);
 	}
 
-	private void attach(File agent, String startClassName) {
+	private void findAgent() {
+		try {
+			Class<?> loaded = Class
+					.forName("org.springsource.loaded.agent.SpringLoadedAgent");
+			if (this.agent == null && loaded != null) {
+				CodeSource source = loaded.getProtectionDomain().getCodeSource();
+				if (source != null) {
+					this.agent = new File(source.getLocation().getFile());
+				}
+			}
+		}
+		catch (ClassNotFoundException e) {
+			// ignore;
+		}
+	}
+
+	private void attach(File agent) {
 		String nameOfRunningVM = ManagementFactory.getRuntimeMXBean().getName();
 		int p = nameOfRunningVM.indexOf('@');
 		String pid = nameOfRunningVM.substring(0, p);
