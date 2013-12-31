@@ -98,4 +98,9 @@ public class SpringBootPluginExtension {
 	Layout convertLayout() {
 		(layout == null ? null : layout.layout)
 	}
+	
+	/**
+	 * Location of an agent jar to attach to the VM when running the application with runJar task.
+	 */
+	File agent;
 }

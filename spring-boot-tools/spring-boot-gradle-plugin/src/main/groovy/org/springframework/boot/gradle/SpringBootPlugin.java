@@ -26,6 +26,7 @@ import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.springframework.boot.gradle.task.Repackage;
 import org.springframework.boot.gradle.task.RunApp;
+import org.springframework.boot.gradle.task.RunWithAgent;
 
 /**
  * Gradle 'Spring Boot' {@link Plugin}.
@@ -54,6 +55,11 @@ public class SpringBootPlugin implements Plugin<Project> {
 	private void applyRepackage(Project project) {
 		Repackage packageTask = addRepackageTask(project);
 		ensureTaskRunsOnAssembly(project, packageTask);
+		enhanceRunTask(project);
+	}
+
+	private void enhanceRunTask(Project project) {
+		project.getTasks().whenTaskAdded(new RunWithAgent(project));
 	}
 
 	private void applyRun(Project project) {
