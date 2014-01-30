@@ -19,6 +19,7 @@ package org.springframework.boot.gradle;
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.ApplicationPlugin;
@@ -55,20 +56,23 @@ public class SpringBootPlugin implements Plugin<Project> {
 	private void applyRepackage(Project project) {
 		Repackage packageTask = addRepackageTask(project);
 		ensureTaskRunsOnAssembly(project, packageTask);
-		enhanceRunTask(project);
-	}
-
-	private void enhanceRunTask(Project project) {
-		project.getTasks().whenTaskAdded(new RunWithAgent(project));
 	}
 
 	private void applyRun(Project project) {
+		enhanceRunTask(project);
 		addRunAppTask(project);
 		// register BootRepackage so that we can use task foo(type: BootRepackage) {}
 		project.getExtensions().getExtraProperties()
 				.set("BootRepackage", Repackage.class);
 	}
 
+	private void enhanceRunTask(Project project) {
+		RunWithAgent action = new RunWithAgent(project);
+		project.getTasks().whenTaskAdded(action);
+		Task task = project.getTasks().getByName("run");
+		action.execute(task); 
+	}
+	
 	private void applyResolutionStrategy(Project project) {
 		project.getConfigurations().all(new Action<Configuration>() {
 

@@ -24,6 +24,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.JavaExec;
 import org.springframework.boot.gradle.SpringBootPluginExtension;
+import org.springframework.boot.loader.tools.AgentAttacher;
 
 /**
  * Add a java agent to the "run" task if configured. You can add an agent in 3 ways (4 if
@@ -58,9 +59,33 @@ public class RunWithAgent implements Action<Task> {
 				}
 			});
 		}
+		if (task instanceof RunApp) {
+			final RunApp exec = (RunApp) task;
+			project.beforeEvaluate(new Action<Project>() {
+				@Override
+				public void execute(Project project) {
+					addAgent(exec);
+				}
+			});
+		}
+	}
+
+	private void addAgent(RunApp exec) {
+		project.getLogger().debug("Attaching to: " + exec);
+		findAgent(project.getExtensions().getByType(SpringBootPluginExtension.class));
+		if (this.agent != null) {
+			exec.doFirst(new Action<Task>() {
+				@Override
+				public void execute(Task task) {
+					project.getLogger().info("Attaching: " + RunWithAgent.this.agent);
+					AgentAttacher.attach(RunWithAgent.this.agent);
+				}
+			});
+		}
 	}
 
 	private void addAgent(JavaExec exec) {
+		project.getLogger().debug("Attaching to: " + exec);
 		findAgent(project.getExtensions().getByType(SpringBootPluginExtension.class));
 		if (this.agent != null) {
 			project.getLogger().info("Attaching: " + this.agent);
@@ -69,27 +94,30 @@ public class RunWithAgent implements Action<Task> {
 	}
 
 	private void findAgent(SpringBootPluginExtension extension) {
+		if (this.agent!=null) {
+			return;
+		}
 		project.getLogger().info("Finding agent");
 		if (project.hasProperty("run.agent")) {
 			this.agent = project.file(project.property("run.agent"));
-			return;
-		}
-		if (extension.getAgent() != null) {
+		} else if (extension.getAgent() != null) {
 			this.agent = extension.getAgent();
-			return;
 		}
-		try {
-			Class<?> loaded = Class
-					.forName("org.springsource.loaded.agent.SpringLoadedAgent");
-			if (this.agent == null && loaded != null) {
-				CodeSource source = loaded.getProtectionDomain().getCodeSource();
-				if (source != null) {
-					this.agent = new File(source.getLocation().getFile());
+		if (this.agent == null) {
+			try {
+				Class<?> loaded = Class
+						.forName("org.springsource.loaded.agent.SpringLoadedAgent");
+				if (this.agent == null && loaded != null) {
+					CodeSource source = loaded.getProtectionDomain().getCodeSource();
+					if (source != null) {
+						this.agent = new File(source.getLocation().getFile());
+					}
 				}
+			} catch (ClassNotFoundException e) {
+				// ignore;
 			}
-		} catch (ClassNotFoundException e) {
-			// ignore;
 		}
+		project.getLogger().debug("Agent: " + this.agent);
 	}
 
 }

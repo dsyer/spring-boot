@@ -18,7 +18,6 @@ package org.springframework.boot.maven;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -38,9 +37,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.springframework.boot.loader.tools.AgentAttacher;
 import org.springframework.boot.loader.tools.MainClassFinder;
-
-import com.sun.tools.attach.VirtualMachine;
 
 /**
  * MOJO that can be used to run a executable archive application directly from Maven.
@@ -104,7 +102,7 @@ public class RunMojo extends AbstractMojo {
 		findAgent();
 		if (this.agent != null) {
 			getLog().info("Attaching: " + this.agent);
-			attach(this.agent);
+			AgentAttacher.attach(this.agent);
 		}
 		final String startClassName = getStartClass();
 		run(startClassName);
@@ -123,21 +121,6 @@ public class RunMojo extends AbstractMojo {
 		}
 		catch (ClassNotFoundException e) {
 			// ignore;
-		}
-	}
-
-	private void attach(File agent) {
-		String nameOfRunningVM = ManagementFactory.getRuntimeMXBean().getName();
-		int p = nameOfRunningVM.indexOf('@');
-		String pid = nameOfRunningVM.substring(0, p);
-
-		try {
-			VirtualMachine vm = VirtualMachine.attach(pid);
-			vm.loadAgent(agent.getAbsolutePath());
-			vm.detach();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
 		}
 	}
 

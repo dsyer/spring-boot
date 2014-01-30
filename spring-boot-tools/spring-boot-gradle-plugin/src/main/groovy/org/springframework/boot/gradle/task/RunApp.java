@@ -61,9 +61,13 @@ public class RunApp extends DefaultTask {
 		});
 
 		final Set<File> allResources = new LinkedHashSet<File>();
-		if (this.main != null) {
-			SourceDirectorySet resources = this.main.getResources();
+		final File outputs;
+		if (main != null) {
+			SourceDirectorySet resources = main.getResources();
 			allResources.addAll(resources.getSrcDirs());
+			outputs = main.getOutput().getResourcesDir();
+		} else {
+			outputs = null;
 		}
 
 		project.getTasks().withType(JavaExec.class, new Action<JavaExec>() {
@@ -87,6 +91,14 @@ public class RunApp extends DefaultTask {
 
 					});
 					getLogger().info("Found main: " + mainClass);
+				}
+				if (outputs != null) {
+					// Special case: this file causes logback to worry that it has been
+					// configured twice, so remove it from the target directory...
+					File logback = new File(outputs, "logback.xml");
+					if (logback.exists()) {
+						logback.delete();
+					}
 				}
 				exec.exec();
 			}

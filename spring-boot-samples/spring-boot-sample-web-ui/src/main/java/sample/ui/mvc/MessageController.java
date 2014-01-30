@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -72,12 +71,6 @@ public class MessageController {
 	@RequestMapping("/foo")
 	public String foo() {
 		throw new RuntimeException("Expected exception in controller");
-	}
-
-	@RequestMapping("/bar")
-	@ResponseBody
-	public String bar() {
-		return "Hello";
 	}
 
 }
