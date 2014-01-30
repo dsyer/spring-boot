@@ -72,6 +72,12 @@ public class RunMojo extends AbstractMojo {
 	private File agent;
 
 	/**
+	 * Flag to say that the agent requires -noverify.
+	 */
+	@Parameter(property = "run.noverify")
+	private boolean noverify;
+
+	/**
 	 * Arguments that should be passed to the application.
 	 */
 	@Parameter(property = "run.arguments")
@@ -101,7 +107,11 @@ public class RunMojo extends AbstractMojo {
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		findAgent();
 		if (this.agent != null) {
-			getLog().info("Attaching: " + this.agent);
+			getLog().info("Attaching agent: " + this.agent);
+			if (this.noverify && !AgentAttacher.hasNoVerify()) {
+				throw new MojoExecutionException(
+						"The JVM must be started with -noverify for this agent to work. You can use MAVEN_OPTS to add that flag.");
+			}
 			AgentAttacher.attach(this.agent);
 		}
 		final String startClassName = getStartClass();
@@ -113,6 +123,7 @@ public class RunMojo extends AbstractMojo {
 			Class<?> loaded = Class
 					.forName("org.springsource.loaded.agent.SpringLoadedAgent");
 			if (this.agent == null && loaded != null) {
+				this.noverify = true;
 				CodeSource source = loaded.getProtectionDomain().getCodeSource();
 				if (source != null) {
 					this.agent = new File(source.getLocation().getFile());

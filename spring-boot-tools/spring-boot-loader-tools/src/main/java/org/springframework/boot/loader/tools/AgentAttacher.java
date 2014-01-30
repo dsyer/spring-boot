@@ -18,6 +18,7 @@ package org.springframework.boot.loader.tools;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.util.List;
 
 import com.sun.tools.attach.VirtualMachine;
 
@@ -39,6 +40,14 @@ public abstract class AgentAttacher {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public static List<String> commandLineArguments() {
+		return ManagementFactory.getRuntimeMXBean().getInputArguments();
+	}
+
+	public static boolean hasNoVerify() {
+		return commandLineArguments().contains("-Xverify:none");
 	}
 
 }

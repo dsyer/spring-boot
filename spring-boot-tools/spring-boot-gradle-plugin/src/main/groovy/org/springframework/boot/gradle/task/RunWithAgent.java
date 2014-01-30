@@ -25,6 +25,7 @@ import org.gradle.api.Task;
 import org.gradle.api.tasks.JavaExec;
 import org.springframework.boot.gradle.SpringBootPluginExtension;
 import org.springframework.boot.loader.tools.AgentAttacher;
+import org.springframework.core.task.TaskRejectedException;
 
 /**
  * Add a java agent to the "run" task if configured. You can add an agent in 3 ways (4 if
@@ -43,6 +44,8 @@ public class RunWithAgent implements Action<Task> {
 	private File agent;
 
 	private Project project;
+
+	private boolean noverify = false;
 
 	public RunWithAgent(Project project) {
 		this.project = project;
@@ -77,7 +80,12 @@ public class RunWithAgent implements Action<Task> {
 			exec.doFirst(new Action<Task>() {
 				@Override
 				public void execute(Task task) {
-					project.getLogger().info("Attaching: " + RunWithAgent.this.agent);
+					project.getLogger().info(
+							"Attaching agent: " + RunWithAgent.this.agent);
+					if (RunWithAgent.this.noverify && !AgentAttacher.hasNoVerify()) {
+						throw new TaskRejectedException(
+								"The JVM must be started with -noverify for this agent to work. You can use JAVA_OPTS to add that flag.");
+					}
 					AgentAttacher.attach(RunWithAgent.this.agent);
 				}
 			});
@@ -88,15 +96,20 @@ public class RunWithAgent implements Action<Task> {
 		project.getLogger().debug("Attaching to: " + exec);
 		findAgent(project.getExtensions().getByType(SpringBootPluginExtension.class));
 		if (this.agent != null) {
-			project.getLogger().info("Attaching: " + this.agent);
-			exec.jvmArgs("-javaagent:" + this.agent.getAbsolutePath(), "-noverify");
+			project.getLogger().info("Attaching agent: " + this.agent);
+			exec.jvmArgs("-javaagent:" + this.agent.getAbsolutePath());
+			if (noverify) {
+				exec.jvmArgs("-noverify");
+			}
 		}
 	}
 
 	private void findAgent(SpringBootPluginExtension extension) {
-		if (this.agent!=null) {
+		if (this.agent != null) {
 			return;
 		}
+		this.noverify = project.getExtensions()
+				.getByType(SpringBootPluginExtension.class).getNoverify();
 		project.getLogger().info("Finding agent");
 		if (project.hasProperty("run.agent")) {
 			this.agent = project.file(project.property("run.agent"));
@@ -108,6 +121,7 @@ public class RunWithAgent implements Action<Task> {
 				Class<?> loaded = Class
 						.forName("org.springsource.loaded.agent.SpringLoadedAgent");
 				if (this.agent == null && loaded != null) {
+					this.noverify = true;
 					CodeSource source = loaded.getProtectionDomain().getCodeSource();
 					if (source != null) {
 						this.agent = new File(source.getLocation().getFile());

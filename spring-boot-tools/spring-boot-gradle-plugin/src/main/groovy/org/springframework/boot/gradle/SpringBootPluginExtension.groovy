@@ -103,4 +103,10 @@ public class SpringBootPluginExtension {
 	 * Location of an agent jar to attach to the VM when running the application with runJar task.
 	 */
 	File agent;
+
+	/**
+	 * Flag to indicate that the agent requires -noverify (and the plugin will refuse to start if it is not set)
+	 */
+	boolean noverify;
+	
 }
