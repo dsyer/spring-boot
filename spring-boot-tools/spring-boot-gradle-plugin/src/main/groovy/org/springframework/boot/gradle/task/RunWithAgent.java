@@ -45,7 +45,7 @@ public class RunWithAgent implements Action<Task> {
 
 	private Project project;
 
-	private boolean noverify = false;
+	private Boolean noverify;
 
 	public RunWithAgent(Project project) {
 		this.project = project;
@@ -82,7 +82,7 @@ public class RunWithAgent implements Action<Task> {
 				public void execute(Task task) {
 					project.getLogger().info(
 							"Attaching agent: " + RunWithAgent.this.agent);
-					if (RunWithAgent.this.noverify && !AgentAttacher.hasNoVerify()) {
+					if (RunWithAgent.this.noverify!=null && RunWithAgent.this.noverify && !AgentAttacher.hasNoVerify()) {
 						throw new TaskRejectedException(
 								"The JVM must be started with -noverify for this agent to work. You can use JAVA_OPTS to add that flag.");
 					}
@@ -98,7 +98,7 @@ public class RunWithAgent implements Action<Task> {
 		if (this.agent != null) {
 			project.getLogger().info("Attaching agent: " + this.agent);
 			exec.jvmArgs("-javaagent:" + this.agent.getAbsolutePath());
-			if (noverify) {
+			if (this.noverify != null && this.noverify) {
 				exec.jvmArgs("-noverify");
 			}
 		}
@@ -121,7 +121,9 @@ public class RunWithAgent implements Action<Task> {
 				Class<?> loaded = Class
 						.forName("org.springsource.loaded.agent.SpringLoadedAgent");
 				if (this.agent == null && loaded != null) {
-					this.noverify = true;
+					if (this.noverify==null) {
+						this.noverify = true;
+					}
 					CodeSource source = loaded.getProtectionDomain().getCodeSource();
 					if (source != null) {
 						this.agent = new File(source.getLocation().getFile());

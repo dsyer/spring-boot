@@ -107,6 +107,6 @@ public class SpringBootPluginExtension {
 	/**
 	 * Flag to indicate that the agent requires -noverify (and the plugin will refuse to start if it is not set)
 	 */
-	boolean noverify;
+	Boolean noverify;
 	
 }
