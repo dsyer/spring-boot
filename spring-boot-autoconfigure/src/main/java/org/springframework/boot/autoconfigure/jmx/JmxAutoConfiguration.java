@@ -16,10 +16,14 @@
 
 package org.springframework.boot.autoconfigure.jmx;
 
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableMBeanExport;
 import org.springframework.jmx.export.MBeanExporter;
@@ -39,9 +43,14 @@ import org.springframework.jmx.export.MBeanExporter;
 public class JmxAutoConfiguration {
 
 	@Configuration
-	@EnableMBeanExport(defaultDomain = "${spring.jmx.default_domain:}", server = "${spring.jmx.server:}")
+	@EnableMBeanExport(defaultDomain = "${spring.jmx.default_domain:}", server = "${spring.jmx.server:mbeanServer}")
 	public static class MBeanExport {
+	}
 
+	@Bean
+	@ConditionalOnMissingBean
+	public MBeanServer mbeanServer() {
+		return MBeanServerFactory.createMBeanServer();
 	}
 
 }
