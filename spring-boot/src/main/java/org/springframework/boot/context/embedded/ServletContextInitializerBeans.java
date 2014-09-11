@@ -34,6 +34,8 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.boot.context.embedded.EmbeddedWebApplicationContext.LazyFilterProxy;
+import org.springframework.boot.context.embedded.EmbeddedWebApplicationContext.LazyServletProxy;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -63,6 +65,8 @@ class ServletContextInitializerBeans extends
 
 	private List<ServletContextInitializer> sortedList;
 
+	private boolean lazy = true;
+
 	public ServletContextInitializerBeans(ListableBeanFactory beanFactory) {
 		this.initializers = new LinkedMultiValueMap<Class<?>, ServletContextInitializer>();
 		addServletContextInitializerBeans(beanFactory);
@@ -74,6 +78,15 @@ class ServletContextInitializerBeans extends
 			sortedInitializers.addAll(entry.getValue());
 		}
 		this.sortedList = Collections.unmodifiableList(sortedInitializers);
+	}
+
+	/**
+	 * Flag signalling that Filter and Servlet beans should be wrapped in a lazy proxy to
+	 * avoid dependency cycles.
+	 * @param lazy the flag to set (default true)
+	 */
+	public void setLazy(boolean lazy) {
+		this.lazy = lazy;
 	}
 
 	private void addServletContextInitializerBeans(ListableBeanFactory beanFactory) {
@@ -173,7 +186,22 @@ class ServletContextInitializerBeans extends
 		String[] names = beanFactory.getBeanNamesForType(type, true, false);
 		Map<String, T> map = new LinkedHashMap<String, T>();
 		for (String name : names) {
-			map.put(name, beanFactory.getBean(name, type));
+			if (name.startsWith("scopedTarget.")) {
+				continue;
+			}
+			if (this.lazy && Filter.class.isAssignableFrom(type)) {
+				@SuppressWarnings("unchecked")
+				T filter = (T) new LazyFilterProxy(name, context);
+				map.put(name, filter);
+			}
+			else if (this.lazy && Servlet.class.isAssignableFrom(type)) {
+				@SuppressWarnings("unchecked")
+				T servlet = (T) new LazyServletProxy(name, context);
+				map.put(name, servlet);
+			}
+			else {
+				map.put(name, beanFactory.getBean(name, type));
+			}
 		}
 		beans.addAll(map.entrySet());
 		Collections.sort(beans, comparator);

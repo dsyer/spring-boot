@@ -38,6 +38,8 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -125,8 +127,8 @@ public class AnnotationConfigEmbeddedWebApplicationContextTests {
 	private void verifyContext() {
 		MockEmbeddedServletContainerFactory containerFactory = this.context
 				.getBean(MockEmbeddedServletContainerFactory.class);
-		Servlet servlet = this.context.getBean(Servlet.class);
-		verify(containerFactory.getServletContext()).addServlet("servlet", servlet);
+		verify(containerFactory.getServletContext()).addServlet(eq("servlet"),
+				any(Servlet.class));
 	}
 
 	@Component

@@ -31,6 +31,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.ContextLoader;
@@ -41,6 +44,7 @@ import org.springframework.web.context.support.GenericWebApplicationContext;
 import org.springframework.web.context.support.ServletContextAwareProcessor;
 import org.springframework.web.context.support.ServletContextResource;
 import org.springframework.web.context.support.WebApplicationContextUtils;
+import org.springframework.web.filter.DelegatingFilterProxy;
 
 /**
  * A {@link WebApplicationContext} that can be used to bootstrap itself from a contained
@@ -319,6 +323,62 @@ public class EmbeddedWebApplicationContext extends GenericWebApplicationContext 
 	 */
 	public EmbeddedServletContainer getEmbeddedServletContainer() {
 		return this.embeddedServletContainer;
+	}
+
+	public static class LazyFilterProxy extends DelegatingFilterProxy implements Ordered {
+
+		LazyFilterProxy(String targetBeanName, WebApplicationContext context) {
+			super(targetBeanName, context);
+		}
+
+		@Override
+		protected void initFilterBean() throws ServletException {
+		}
+
+		@Override
+		public String getTargetBeanName() {
+			return super.getTargetBeanName();
+		}
+
+		public Filter getFilterBean() {
+			return findWebApplicationContext().getBean(getTargetBeanName(), Filter.class);
+		}
+
+		@Override
+		public int getOrder() {
+			Filter bean = getFilterBean();
+			if (bean instanceof Ordered) {
+				return ((Ordered) bean).getOrder();
+			}
+			Class<?> clazz = bean.getClass();
+			Order order = AnnotationUtils.findAnnotation(clazz, Order.class);
+			if (order != null) {
+				return order.value();
+			}
+			return Ordered.LOWEST_PRECEDENCE;
+		}
+
+	}
+
+	public static class LazyServletProxy extends DelegatingServletProxy {
+
+		LazyServletProxy(String targetBeanName, WebApplicationContext context) {
+			super(targetBeanName, context);
+		}
+
+		@Override
+		protected void initServletBean() throws ServletException {
+		}
+
+		public Servlet getServletBean() {
+			return findWebApplicationContext()
+					.getBean(getTargetBeanName(), Servlet.class);
+		}
+
+		@Override
+		public String getTargetBeanName() {
+			return super.getTargetBeanName();
+		}
 	}
 
 }

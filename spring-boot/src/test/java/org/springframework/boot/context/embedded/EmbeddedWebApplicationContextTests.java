@@ -59,8 +59,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -196,7 +198,8 @@ public class EmbeddedWebApplicationContextTests {
 		this.context.registerBeanDefinition("servletBean", beanDefinition(servlet));
 		this.context.refresh();
 		MockEmbeddedServletContainerFactory escf = getEmbeddedServletContainerFactory();
-		verify(escf.getServletContext()).addServlet("servletBean", servlet);
+		verify(escf.getServletContext())
+				.addServlet(eq("servletBean"), any(Servlet.class));
 		verify(escf.getRegisteredServlet(0).getRegistration()).addMapping("/");
 	}
 
@@ -226,14 +229,14 @@ public class EmbeddedWebApplicationContextTests {
 		Servlet servlet2 = mock(Servlet.class,
 				withSettings().extraInterfaces(Ordered.class));
 		given(((Ordered) servlet2).getOrder()).willReturn(2);
-		this.context.registerBeanDefinition("servletBean2", beanDefinition(servlet2));
 		this.context.registerBeanDefinition("servletBean1", beanDefinition(servlet1));
+		this.context.registerBeanDefinition("servletBean2", beanDefinition(servlet2));
 		this.context.refresh();
 		MockEmbeddedServletContainerFactory escf = getEmbeddedServletContainerFactory();
 		ServletContext servletContext = escf.getServletContext();
 		InOrder ordered = inOrder(servletContext);
-		ordered.verify(servletContext).addServlet("servletBean1", servlet1);
-		ordered.verify(servletContext).addServlet("servletBean2", servlet2);
+		ordered.verify(servletContext).addServlet(eq("servletBean1"), any(Servlet.class));
+		ordered.verify(servletContext).addServlet(eq("servletBean2"), any(Servlet.class));
 		verify(escf.getRegisteredServlet(0).getRegistration()).addMapping(
 				"/servletBean1/");
 		verify(escf.getRegisteredServlet(1).getRegistration()).addMapping(
@@ -249,15 +252,16 @@ public class EmbeddedWebApplicationContextTests {
 		Servlet servlet2 = mock(Servlet.class,
 				withSettings().extraInterfaces(Ordered.class));
 		given(((Ordered) servlet2).getOrder()).willReturn(2);
-		this.context.registerBeanDefinition("servletBean2", beanDefinition(servlet2));
 		this.context
 				.registerBeanDefinition("dispatcherServlet", beanDefinition(servlet1));
+		this.context.registerBeanDefinition("servletBean2", beanDefinition(servlet2));
 		this.context.refresh();
 		MockEmbeddedServletContainerFactory escf = getEmbeddedServletContainerFactory();
 		ServletContext servletContext = escf.getServletContext();
 		InOrder ordered = inOrder(servletContext);
-		ordered.verify(servletContext).addServlet("dispatcherServlet", servlet1);
-		ordered.verify(servletContext).addServlet("servletBean2", servlet2);
+		ordered.verify(servletContext).addServlet(eq("dispatcherServlet"),
+				any(Servlet.class));
+		ordered.verify(servletContext).addServlet(eq("servletBean2"), any(Servlet.class));
 		verify(escf.getRegisteredServlet(0).getRegistration()).addMapping("/");
 		verify(escf.getRegisteredServlet(1).getRegistration()).addMapping(
 				"/servletBean2/");
@@ -272,16 +276,19 @@ public class EmbeddedWebApplicationContextTests {
 		Filter filter2 = mock(Filter.class, withSettings().extraInterfaces(Ordered.class));
 		given(((Ordered) filter2).getOrder()).willReturn(2);
 		this.context.registerBeanDefinition("servletBean", beanDefinition(servlet));
-		this.context.registerBeanDefinition("filterBean2", beanDefinition(filter2));
 		this.context.registerBeanDefinition("filterBean1", beanDefinition(filter1));
+		this.context.registerBeanDefinition("filterBean2", beanDefinition(filter2));
 		this.context.refresh();
 		MockEmbeddedServletContainerFactory escf = getEmbeddedServletContainerFactory();
 		ServletContext servletContext = escf.getServletContext();
 		InOrder ordered = inOrder(servletContext);
-		verify(escf.getServletContext()).addServlet("servletBean", servlet);
+		verify(escf.getServletContext())
+				.addServlet(eq("servletBean"), any(Servlet.class));
 		verify(escf.getRegisteredServlet(0).getRegistration()).addMapping("/");
-		ordered.verify(escf.getServletContext()).addFilter("filterBean1", filter1);
-		ordered.verify(escf.getServletContext()).addFilter("filterBean2", filter2);
+		ordered.verify(escf.getServletContext()).addFilter(eq("filterBean1"),
+				any(Filter.class));
+		ordered.verify(escf.getServletContext()).addFilter(eq("filterBean2"),
+				any(Filter.class));
 		verify(escf.getRegisteredFilter(0).getRegistration()).addMappingForUrlPatterns(
 				FilterRegistrationBean.ASYNC_DISPATCHER_TYPES, false, "/*");
 		verify(escf.getRegisteredFilter(1).getRegistration()).addMappingForUrlPatterns(
@@ -375,7 +382,7 @@ public class EmbeddedWebApplicationContextTests {
 	}
 
 	@Test
-	public void filterReegistrationBeansSkipsRegisteredFilters() throws Exception {
+	public void filterRegistrationBeansSkipsRegisteredFilters() throws Exception {
 		addEmbeddedServletContainerFactoryBean();
 		Filter filter = mock(Filter.class);
 		FilterRegistrationBean initializer = new FilterRegistrationBean(filter);

@@ -21,6 +21,8 @@ import javax.servlet.Servlet;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -40,14 +42,19 @@ public class XmlEmbeddedWebApplicationContextTests {
 
 	@Test
 	public void createFromResource() throws Exception {
-		this.context = new XmlEmbeddedWebApplicationContext(new ClassPathResource(FILE,
-				getClass()));
+		this.context = new XmlEmbeddedWebApplicationContext();
+		this.context.load(new ClassPathResource(FILE, getClass()));
+		this.context.setLazy(false);
+		this.context.refresh();
 		verifyContext();
 	}
 
 	@Test
 	public void createFromResourceLocation() throws Exception {
-		this.context = new XmlEmbeddedWebApplicationContext(PATH + FILE);
+		this.context = new XmlEmbeddedWebApplicationContext();
+		this.context.load(PATH + FILE);
+		this.context.setLazy(false);
+		this.context.refresh();
 		verifyContext();
 	}
 
@@ -84,7 +91,7 @@ public class XmlEmbeddedWebApplicationContextTests {
 	private void verifyContext() {
 		MockEmbeddedServletContainerFactory containerFactory = this.context
 				.getBean(MockEmbeddedServletContainerFactory.class);
-		Servlet servlet = this.context.getBean(Servlet.class);
-		verify(containerFactory.getServletContext()).addServlet("servlet", servlet);
+		verify(containerFactory.getServletContext()).addServlet(eq("servlet"),
+				any(Servlet.class));
 	}
 }
