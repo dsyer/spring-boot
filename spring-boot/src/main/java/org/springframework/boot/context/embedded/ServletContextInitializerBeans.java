@@ -39,6 +39,7 @@ import org.springframework.boot.context.embedded.EmbeddedWebApplicationContext.L
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * A collection {@link ServletContextInitializer}s obtained from a
@@ -67,7 +68,8 @@ class ServletContextInitializerBeans extends
 
 	private boolean lazy = true;
 
-	public ServletContextInitializerBeans(ListableBeanFactory beanFactory) {
+	public ServletContextInitializerBeans(WebApplicationContext beanFactory, boolean lazy) {
+		this.lazy = lazy;
 		this.initializers = new LinkedMultiValueMap<Class<?>, ServletContextInitializer>();
 		addServletContextInitializerBeans(beanFactory);
 		addAdaptableBeans(beanFactory);
@@ -80,16 +82,7 @@ class ServletContextInitializerBeans extends
 		this.sortedList = Collections.unmodifiableList(sortedInitializers);
 	}
 
-	/**
-	 * Flag signalling that Filter and Servlet beans should be wrapped in a lazy proxy to
-	 * avoid dependency cycles.
-	 * @param lazy the flag to set (default true)
-	 */
-	public void setLazy(boolean lazy) {
-		this.lazy = lazy;
-	}
-
-	private void addServletContextInitializerBeans(ListableBeanFactory beanFactory) {
+	private void addServletContextInitializerBeans(WebApplicationContext beanFactory) {
 		for (Entry<String, ServletContextInitializer> initializerBean : getOrderedBeansOfType(
 				beanFactory, ServletContextInitializer.class)) {
 			addServletContextInitializerBean(initializerBean.getValue());
@@ -125,7 +118,7 @@ class ServletContextInitializerBeans extends
 	}
 
 	@SuppressWarnings("unchecked")
-	private void addAdaptableBeans(ListableBeanFactory beanFactory) {
+	private void addAdaptableBeans(WebApplicationContext beanFactory) {
 		MultipartConfigElement multipartConfig = getMultipartConfig(beanFactory);
 		addAsRegistrationBean(beanFactory, Servlet.class,
 				new ServletRegistrationBeanAdapter(multipartConfig));
@@ -138,19 +131,20 @@ class ServletContextInitializerBeans extends
 		}
 	}
 
-	private MultipartConfigElement getMultipartConfig(ListableBeanFactory beanFactory) {
+	private MultipartConfigElement getMultipartConfig(WebApplicationContext beanFactory) {
 		List<Entry<String, MultipartConfigElement>> beans = getOrderedBeansOfType(
 				beanFactory, MultipartConfigElement.class);
 		return (beans.isEmpty() ? null : beans.get(0).getValue());
 	}
 
-	private <T> void addAsRegistrationBean(ListableBeanFactory beanFactory,
+	private <T> void addAsRegistrationBean(WebApplicationContext beanFactory,
 			Class<T> type, RegistrationBeanAdapter<T> adapter) {
 		addAsRegistrationBean(beanFactory, type, type, adapter);
 	}
 
-	private <T, B extends T> void addAsRegistrationBean(ListableBeanFactory beanFactory,
-			Class<T> type, Class<B> beanType, RegistrationBeanAdapter<T> adapter) {
+	private <T, B extends T> void addAsRegistrationBean(
+			WebApplicationContext beanFactory, Class<T> type, Class<B> beanType,
+			RegistrationBeanAdapter<T> adapter) {
 		List<Map.Entry<String, B>> beans = getOrderedBeansOfType(beanFactory, beanType);
 		for (Entry<String, B> bean : beans) {
 			if (this.seen.add(bean.getValue())) {
@@ -174,7 +168,7 @@ class ServletContextInitializerBeans extends
 	}
 
 	private <T> List<Entry<String, T>> getOrderedBeansOfType(
-			ListableBeanFactory beanFactory, Class<T> type) {
+			WebApplicationContext beanFactory, Class<T> type) {
 		List<Entry<String, T>> beans = new ArrayList<Entry<String, T>>();
 		Comparator<Entry<String, T>> comparator = new Comparator<Entry<String, T>>() {
 			@Override
@@ -191,12 +185,12 @@ class ServletContextInitializerBeans extends
 			}
 			if (this.lazy && Filter.class.isAssignableFrom(type)) {
 				@SuppressWarnings("unchecked")
-				T filter = (T) new LazyFilterProxy(name, context);
+				T filter = (T) new LazyFilterProxy(name, beanFactory);
 				map.put(name, filter);
 			}
 			else if (this.lazy && Servlet.class.isAssignableFrom(type)) {
 				@SuppressWarnings("unchecked")
-				T servlet = (T) new LazyServletProxy(name, context);
+				T servlet = (T) new LazyServletProxy(name, beanFactory);
 				map.put(name, servlet);
 			}
 			else {

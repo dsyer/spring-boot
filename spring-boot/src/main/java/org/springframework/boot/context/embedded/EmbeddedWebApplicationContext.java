@@ -95,6 +95,17 @@ public class EmbeddedWebApplicationContext extends GenericWebApplicationContext 
 
 	private String namespace;
 
+	private boolean lazy = true;
+
+	/**
+	 * Flag signalling that Filter and Servlet beans should be wrapped in a lazy proxy to
+	 * avoid dependency cycles.
+	 * @param lazy the flag to set (default true)
+	 */
+	public void setLazy(boolean lazy) {
+		this.lazy = lazy;
+	}
+
 	/**
 	 * Register ServletContextAwareProcessor.
 	 * @see ServletContextAwareProcessor
@@ -217,7 +228,7 @@ public class EmbeddedWebApplicationContext extends GenericWebApplicationContext 
 	 * {@link EventListener} beans.
 	 */
 	protected Collection<ServletContextInitializer> getServletContextInitializerBeans() {
-		return new ServletContextInitializerBeans(getBeanFactory());
+		return new ServletContextInitializerBeans(this, this.lazy);
 	}
 
 	/**
