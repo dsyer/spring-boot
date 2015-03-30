@@ -16,6 +16,7 @@
 		<url>http://www.spring.io</url>
 	</organization>
 	<properties>
+		<java.version>1.8</java.version>
 		<main.basedir>${basedir}/..</main.basedir>
 	</properties>
 	<dependencies>
@@ -200,4 +201,33 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<configuration>
+					<signature>
+						<groupId>org.codehaus.mojo.signature</groupId>
+						<artifactId>java16</artifactId>
+						<version>1.0</version>
+					</signature>
+				</configuration>
+				<executions>
+					<execution>
+						<id>enforce-java-6</id>
+						<phase>test</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<annotations>
+								<annotation>org.springframework.lang.UsesJava8</annotation>
+							</annotations>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

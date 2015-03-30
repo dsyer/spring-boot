@@ -1667,6 +1667,11 @@
 					<version>2.5</version>
 				</plugin>
 				<plugin>
+                  <groupId>org.codehaus.mojo</groupId>
+                  <artifactId>animal-sniffer-maven-plugin</artifactId>
+                  <version>1.14</version>
+				</plugin>
+				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>build-helper-maven-plugin</artifactId>
 					<version>1.9.1</version>
