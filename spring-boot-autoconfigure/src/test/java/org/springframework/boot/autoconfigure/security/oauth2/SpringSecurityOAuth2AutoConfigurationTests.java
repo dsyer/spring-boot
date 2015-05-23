@@ -30,7 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.oauth2.authserver.SpringSecurityOAuth2AuthorizationServerConfiguration;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.ResourceServerProperties;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.SpringSecurityOAuth2ResourceServerConfiguration;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerConfiguration;
 import org.springframework.boot.autoconfigure.web.DispatcherServletAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.HttpMessageConvertersAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.ServerPropertiesAutoConfiguration;
@@ -112,8 +112,8 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 		this.context.refresh();
 
 		this.context.getBean(SpringSecurityOAuth2AuthorizationServerConfiguration.class);
-		this.context.getBean(SpringSecurityOAuth2ResourceServerConfiguration.class);
-		this.context.getBean(SpringSecurityOAuth2MethodSecurityConfiguration.class);
+		this.context.getBean(OAuth2ResourceServerConfiguration.class);
+		this.context.getBean(OAuth2MethodSecurityConfiguration.class);
 
 		ClientDetails config = this.context.getBean(BaseClientDetails.class);
 		AuthorizationEndpoint endpoint = this.context
@@ -163,7 +163,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 
 		assertThat(
 				this.context
-						.getBeanNamesForType(SpringSecurityOAuth2ResourceServerConfiguration.class).length,
+						.getBeanNamesForType(OAuth2ResourceServerConfiguration.class).length,
 				is(0));
 
 		assertThat(
@@ -183,7 +183,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 
 		assertThat(
 				this.context
-						.getBeanNamesForType(SpringSecurityOAuth2ResourceServerConfiguration.class).length,
+						.getBeanNamesForType(OAuth2ResourceServerConfiguration.class).length,
 				is(1));
 
 		assertThat(
@@ -216,7 +216,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 
 		assertThat(
 				this.context
-						.getBeanNamesForType(SpringSecurityOAuth2ResourceServerConfiguration.class).length,
+						.getBeanNamesForType(OAuth2ResourceServerConfiguration.class).length,
 				is(1));
 
 		verifyAuthentication(config);
@@ -247,7 +247,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 
 		assertThat(
 				this.context
-						.getBeanNamesForType(SpringSecurityOAuth2ResourceServerConfiguration.class).length,
+						.getBeanNamesForType(OAuth2ResourceServerConfiguration.class).length,
 				is(1));
 
 		verifyAuthentication(config);
@@ -260,7 +260,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 				MinimalSecureWebApplication.class);
 		this.context.refresh();
 
-		this.context.getBean(SpringSecurityOAuth2MethodSecurityConfiguration.class);
+		this.context.getBean(OAuth2MethodSecurityConfiguration.class);
 
 		ClientDetails config = this.context.getBean(ClientDetails.class);
 
@@ -283,7 +283,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 				MinimalSecureWebApplication.class);
 		this.context.refresh();
 
-		this.context.getBean(SpringSecurityOAuth2MethodSecurityConfiguration.class);
+		this.context.getBean(OAuth2MethodSecurityConfiguration.class);
 
 		ClientDetails config = this.context.getBean(ClientDetails.class);
 
@@ -306,7 +306,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 				MinimalSecureWebApplication.class);
 		this.context.refresh();
 
-		this.context.getBean(SpringSecurityOAuth2MethodSecurityConfiguration.class);
+		this.context.getBean(OAuth2MethodSecurityConfiguration.class);
 
 		ClientDetails config = this.context.getBean(ClientDetails.class);
 
@@ -403,7 +403,7 @@ public class SpringSecurityOAuth2AutoConfigurationTests {
 	@Import({ UseFreePortEmbeddedContainerConfiguration.class,
 			SecurityAutoConfiguration.class, ServerPropertiesAutoConfiguration.class,
 			DispatcherServletAutoConfiguration.class,
-			SpringSecurityOAuth2AutoConfiguration.class, WebMvcAutoConfiguration.class,
+			OAuth2AutoConfiguration.class, WebMvcAutoConfiguration.class,
 			HttpMessageConvertersAutoConfiguration.class })
 	protected static class MinimalSecureWebApplication {
 

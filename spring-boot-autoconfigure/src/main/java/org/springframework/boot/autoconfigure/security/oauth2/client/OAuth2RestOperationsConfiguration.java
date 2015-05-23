@@ -28,7 +28,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnNotWebApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.boot.autoconfigure.security.oauth2.ClientCredentialsProperties;
+import org.springframework.boot.autoconfigure.security.oauth2.OAuth2ClientProperties;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -60,13 +60,13 @@ import org.springframework.security.oauth2.provider.authentication.OAuth2Authent
 @Configuration
 @ConditionalOnClass(EnableOAuth2Client.class)
 @ConditionalOnExpression("'${spring.oauth2.client.clientId:}'!=''")
-public class SpringSecurityOAuth2ClientConfiguration {
+public class OAuth2RestOperationsConfiguration {
 
 	private static final Log logger = LogFactory
-			.getLog(SpringSecurityOAuth2ClientConfiguration.class);
+			.getLog(OAuth2RestOperationsConfiguration.class);
 
 	@Autowired
-	private ClientCredentialsProperties credentials;
+	private OAuth2ClientProperties credentials;
 
 	@PostConstruct
 	public void init() {

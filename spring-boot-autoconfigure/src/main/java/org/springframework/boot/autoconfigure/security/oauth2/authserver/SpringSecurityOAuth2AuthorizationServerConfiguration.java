@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.security.oauth2.ClientCredentialsProperties;
+import org.springframework.boot.autoconfigure.security.oauth2.OAuth2ClientProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -72,7 +72,7 @@ public class SpringSecurityOAuth2AuthorizationServerConfiguration extends
 	protected static class BaseClientDetailsConfiguration {
 
 		@Autowired
-		private ClientCredentialsProperties client;
+		private OAuth2ClientProperties client;
 
 		@Bean
 		@ConfigurationProperties("spring.oauth2.client")
