@@ -114,6 +114,7 @@
 		<mongodb.version>2.13.2</mongodb.version>
 		<mysql.version>5.1.35</mysql.version>
 		<nekohtml.version>1.9.22</nekohtml.version>
+        <newrelic.version>3.17.0</newrelic.version>
 		<postgresql.version>9.4-1201-jdbc41</postgresql.version>
 		<reactor.version>2.0.4.RELEASE</reactor.version>
 		<reactor-spring.version>2.0.4.RELEASE</reactor-spring.version>
@@ -581,6 +582,16 @@
 				<groupId>com.hazelcast</groupId>
 				<artifactId>hazelcast-spring</artifactId>
 				<version>${hazelcast.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.newrelic.agent.java</groupId>
+				<artifactId>newrelic-api</artifactId>
+				<version>${newrelic.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.newrelic.agent.java</groupId>
+				<artifactId>newrelic-agent</artifactId>
+				<version>${newrelic.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.jayway.jsonpath</groupId>
