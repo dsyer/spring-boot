@@ -21,16 +21,13 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.actuate.endpoint.MetricReaderPublicMetrics;
 import org.springframework.boot.actuate.endpoint.PublicMetrics;
-import org.springframework.boot.actuate.metrics.Metric;
 import org.springframework.boot.actuate.metrics.aggregate.AggregateMetricReader;
-import org.springframework.boot.actuate.metrics.amqp.AmqpMetricWriter;
 import org.springframework.boot.actuate.metrics.amqp.MetricWriterMessageListener;
 import org.springframework.boot.actuate.metrics.reader.MetricReader;
 import org.springframework.boot.actuate.metrics.repository.InMemoryMetricRepository;
+import org.springframework.boot.actuate.metrics.writer.MetricWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Payload;
 
 @Configuration
 public class AggregateMetricsConfiguration {
@@ -44,15 +41,16 @@ public class AggregateMetricsConfiguration {
 
 	@Bean
 	public MetricWriterMessageListener metricWriterMessageListener() {
-		return new MetricWriterMessageListener(this.inMemoryMetrics) {
-			@RabbitListener(queues = "${spring.metrics.export.rabbit.queue}")
-			@Override
-			public void process(
-					@Payload Metric<?> metric,
-					@Header(name = AmqpMetricWriter.HEADER_METRIC_PREFIX, required = false) String prefix) {
-				super.process(metric, prefix);
-			}
-		};
+		return new CustomListener(this.inMemoryMetrics);
+	}
+
+	@RabbitListener(queues = "${spring.metrics.export.rabbit.queue}")
+	public static class CustomListener extends MetricWriterMessageListener {
+
+		public CustomListener(MetricWriter writer) {
+			super(writer);
+		}
+
 	}
 
 	@Bean

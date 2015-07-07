@@ -16,6 +16,7 @@
 
 package org.springframework.boot.actuate.metrics.amqp;
 
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.boot.actuate.metrics.Metric;
 import org.springframework.boot.actuate.metrics.writer.MetricWriter;
 import org.springframework.messaging.handler.annotation.Header;
@@ -42,6 +43,7 @@ public class MetricWriterMessageListener {
 				+ ".";
 	}
 
+	@RabbitHandler
 	public void process(
 			@Payload Metric<?> metric,
 			@Header(name = AmqpMetricWriter.HEADER_METRIC_PREFIX, required = false) String prefix) {
