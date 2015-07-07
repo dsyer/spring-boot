@@ -16,16 +16,20 @@
 
 package org.springframework.boot.autoconfigure.amqp;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.jta.JtaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * Configuration for Spring AMQP annotation driven endpoints.
@@ -38,7 +42,10 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 class RabbitAnnotationDrivenConfiguration {
 
 	@Autowired(required = false)
-	private JtaTransactionManager transactionManager;
+	private PlatformTransactionManager transactionManager;
+
+	@Autowired(required = false)
+	private List<MessageConverter> converters = Collections.emptyList();
 
 	@Bean
 	@ConditionalOnMissingBean(name = "rabbitListenerContainerFactory")
@@ -46,6 +53,9 @@ class RabbitAnnotationDrivenConfiguration {
 			ConnectionFactory connectionFactory) {
 		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 		factory.setConnectionFactory(connectionFactory);
+		if (this.converters.size() == 1) {
+			factory.setMessageConverter(this.converters.get(0));
+		}
 		if (this.transactionManager != null) {
 			factory.setTransactionManager(this.transactionManager);
 		}

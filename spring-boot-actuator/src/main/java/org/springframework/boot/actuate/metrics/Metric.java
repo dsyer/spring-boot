@@ -16,10 +16,14 @@
 
 package org.springframework.boot.actuate.metrics;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Immutable class that can be used to hold any arbitrary system measurement value (a
@@ -29,7 +33,7 @@ import org.springframework.util.ObjectUtils;
  * @param <T> the value type
  * @author Dave Syer
  */
-public class Metric<T extends Number> {
+public class Metric<T extends Number> implements Serializable {
 
 	private final String name;
 
@@ -52,7 +56,9 @@ public class Metric<T extends Number> {
 	 * @param value the value of the metric
 	 * @param timestamp the timestamp for the metric
 	 */
-	public Metric(String name, T value, Date timestamp) {
+	@JsonCreator
+	public Metric(@JsonProperty("name") String name, @JsonProperty("value") T value,
+			@JsonProperty("timestamp") Date timestamp) {
 		Assert.notNull(name, "Name must not be null");
 		this.name = name;
 		this.value = value;

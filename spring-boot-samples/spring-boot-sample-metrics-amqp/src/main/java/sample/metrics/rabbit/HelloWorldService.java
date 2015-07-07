@@ -14,20 +14,27 @@
  * limitations under the License.
  */
 
-package sample.amqp;
+package sample.metrics.rabbit;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-public class Sender {
+@Component
+@ConfigurationProperties(prefix = "service", ignoreUnknownFields = false)
+public class HelloWorldService {
 
-	@Autowired
-	private RabbitTemplate rabbitTemplate;
+	private String name = "World";
 
-	@Scheduled(fixedDelay = 1000L)
-	public void send() {
-		this.rabbitTemplate.convertAndSend("exchange.foo", "foo", "hello");
+	public String getName() {
+		return this.name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getHelloMessage() {
+		return "Hello " + this.name;
 	}
 
 }

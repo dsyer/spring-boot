@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package sample.amqp;
+/**
+ * Metrics integration with AMQP.
+ */
+package org.springframework.boot.actuate.metrics.amqp;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-
-public class Sender {
-
-	@Autowired
-	private RabbitTemplate rabbitTemplate;
-
-	@Scheduled(fixedDelay = 1000L)
-	public void send() {
-		this.rabbitTemplate.convertAndSend("exchange.foo", "foo", "hello");
-	}
-
-}
