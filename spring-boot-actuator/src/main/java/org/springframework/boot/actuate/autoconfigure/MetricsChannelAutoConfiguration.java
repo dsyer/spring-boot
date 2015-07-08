@@ -41,6 +41,7 @@ import org.springframework.messaging.MessageChannel;
 public class MetricsChannelAutoConfiguration {
 
 	@Bean
+	@ExportMetricWriter
 	@ConditionalOnMissingBean
 	public MessageChannelMetricWriter messageChannelMetricWriter(
 			@Qualifier("metricsChannel") MessageChannel channel) {

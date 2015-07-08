@@ -16,23 +16,26 @@
 
 package sample.metrics.rabbit;
 
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.endpoint.MetricReaderPublicMetrics;
 import org.springframework.boot.actuate.endpoint.PublicMetrics;
 import org.springframework.boot.actuate.metrics.aggregate.AggregateMetricReader;
-import org.springframework.boot.actuate.metrics.amqp.MetricWriterMessageListener;
 import org.springframework.boot.actuate.metrics.export.MetricExportProperties;
+import org.springframework.boot.actuate.metrics.integration.AmqpMetricAggregationFlows;
 import org.springframework.boot.actuate.metrics.reader.MetricReader;
 import org.springframework.boot.actuate.metrics.repository.InMemoryMetricRepository;
-import org.springframework.boot.actuate.metrics.writer.MetricWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.dsl.IntegrationFlow;
 
 @Configuration
 public class AggregateMetricsConfiguration {
+
+	@Value("${spring.metrics.export.rabbit.queue}")
+	private String queue;
 
 	@Autowired
 	private MetricExportProperties properties;
@@ -40,22 +43,13 @@ public class AggregateMetricsConfiguration {
 	private InMemoryMetricRepository inMemoryMetrics = new InMemoryMetricRepository();
 
 	@Bean
-	public MessageConverter messageConverter() {
-		return new Jackson2JsonMessageConverter();
-	}
-
-	@Bean
-	public MetricWriterMessageListener metricWriterMessageListener() {
-		return new CustomListener(this.inMemoryMetrics);
-	}
-
-	@RabbitListener(queues = "${spring.metrics.export.rabbit.queue}")
-	public static class CustomListener extends MetricWriterMessageListener {
-
-		public CustomListener(MetricWriter writer) {
-			super(writer);
-		}
-
+	public IntegrationFlow inboundFlow(ConnectionFactory connectionFactory,
+			MessageConverter converter) {
+		return AmqpMetricAggregationFlows.inboundFlow(this.queue, connectionFactory,
+				converter, (metric, headers) -> {
+					this.inMemoryMetrics.set(metric);
+					return null;
+				});
 	}
 
 	@Bean

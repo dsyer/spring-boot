@@ -130,6 +130,7 @@
 		<spring-data-releasetrain.version>Gosling-M1</spring-data-releasetrain.version>
 		<spring-hateoas.version>0.17.0.RELEASE</spring-hateoas.version>
 		<spring-integration.version>4.2.0.M2</spring-integration.version>
+		<spring-integration-dsl.version>1.0.0.RELEASE</spring-integration-dsl.version>
 		<spring-loaded.version>1.2.3.RELEASE</spring-loaded.version>
 		<spring-mobile.version>1.1.4.RELEASE</spring-mobile.version>
 		<spring-plugin.version>1.2.0.RELEASE</spring-plugin.version>
@@ -1674,6 +1675,11 @@
 				<groupId>org.springframework.hateoas</groupId>
 				<artifactId>spring-hateoas</artifactId>
 				<version>${spring-hateoas.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.integration</groupId>
+				<artifactId>spring-integration-java-dsl</artifactId>
+				<version>${spring-integration-dsl.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.integration</groupId>
