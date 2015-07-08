@@ -23,18 +23,20 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.autoconfigure.ExportMetricWriter;
 import org.springframework.boot.actuate.metrics.amqp.AmqpMetricWriter;
+import org.springframework.boot.actuate.metrics.export.MetricExportProperties;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 public class SampleRabbitExportApplication {
 
-	@Value("${spring.metrics.export.rabbit.prefix}")
-	private String prefix;
+	@Autowired
+	private MetricExportProperties properties;
 
 	@Value("${spring.metrics.export.rabbit.queue}")
 	private String queue;
@@ -45,7 +47,8 @@ public class SampleRabbitExportApplication {
 			MessageConverter converter) {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setMessageConverter(converter);
-		return new AmqpMetricWriter(this.prefix, exchange().getName(), template);
+		return new AmqpMetricWriter(this.properties.getAggregate().getPrefix(),
+				exchange().getName(), template);
 	}
 
 	@Bean

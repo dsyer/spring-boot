@@ -19,10 +19,12 @@ package sample.metrics.rabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.MetricReaderPublicMetrics;
 import org.springframework.boot.actuate.endpoint.PublicMetrics;
 import org.springframework.boot.actuate.metrics.aggregate.AggregateMetricReader;
 import org.springframework.boot.actuate.metrics.amqp.MetricWriterMessageListener;
+import org.springframework.boot.actuate.metrics.export.MetricExportProperties;
 import org.springframework.boot.actuate.metrics.reader.MetricReader;
 import org.springframework.boot.actuate.metrics.repository.InMemoryMetricRepository;
 import org.springframework.boot.actuate.metrics.writer.MetricWriter;
@@ -31,6 +33,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class AggregateMetricsConfiguration {
+
+	@Autowired
+	private MetricExportProperties properties;
 
 	private InMemoryMetricRepository inMemoryMetrics = new InMemoryMetricRepository();
 
@@ -60,7 +65,7 @@ public class AggregateMetricsConfiguration {
 
 	private MetricReader aggregatesMetricReader() {
 		AggregateMetricReader repository = new AggregateMetricReader(this.inMemoryMetrics);
-		repository.setKeyPattern("d.d.d");
+		repository.setKeyPattern(this.properties.getAggregate().getKeyPattern());
 		return repository;
 	}
 }
