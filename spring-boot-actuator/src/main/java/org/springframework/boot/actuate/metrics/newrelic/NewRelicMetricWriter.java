@@ -17,6 +17,7 @@
 package org.springframework.boot.actuate.metrics.newrelic;
 
 import org.springframework.boot.actuate.metrics.Metric;
+import org.springframework.boot.actuate.metrics.repository.InMemoryMetricRepository;
 import org.springframework.boot.actuate.metrics.writer.Delta;
 import org.springframework.boot.actuate.metrics.writer.MetricWriter;
 
@@ -32,7 +33,9 @@ import com.newrelic.api.agent.NewRelic;
  */
 public class NewRelicMetricWriter implements MetricWriter {
 
-	private String domain = "Spring/Java";
+	private InMemoryMetricRepository cache = new InMemoryMetricRepository();
+
+	private String domain = "SpringBoot/Metrics";
 
 	/**
 	 * A unique String identifying all the metrics from this application. Normally it
@@ -52,7 +55,32 @@ public class NewRelicMetricWriter implements MetricWriter {
 
 	@Override
 	public void set(Metric<?> value) {
-		NewRelic.recordMetric(getName(value.getName()), value.getValue().floatValue());
+		Delta<?> delta = findCounterDelta(value);
+		if (delta != null) {
+			increment(delta);
+		}
+		else {
+			NewRelic.recordMetric(getName(value.getName()), value.getValue().floatValue());
+		}
+	}
+
+	private Delta<?> findCounterDelta(Metric<?> value) {
+		String name = value.getName();
+		if (!name.startsWith("counter.")) {
+			return null;
+		}
+		Delta<?> delta;
+		Metric<?> last = this.cache.findOne(name);
+		this.cache.set(value);
+		if (last != null) {
+			delta = new Delta<Number>(name, value.getValue().longValue()
+					- last.getValue().longValue(), value.getTimestamp());
+		}
+		else {
+			delta = new Delta<Number>(name, value.getValue().longValue(),
+					value.getTimestamp());
+		}
+		return delta;
 	}
 
 	private String getName(String name) {
