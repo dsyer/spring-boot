@@ -169,13 +169,15 @@ public class EndpointWebMvcChildContextConfiguration {
 			// The parent context has the security filter, so we need to get it injected
 			// with our EndpointHandlerMapping if we can.
 			if (BeanFactoryUtils.beanNamesForTypeIncludingAncestors(beanFactory,
-					ManagementWebSecurityConfigurerAdapter.class).length == 1) {
+					ManagementWebSecurityConfigurerAdapter.class).length > 0) {
 				ManagementWebSecurityConfigurerAdapter bean = beanFactory
 						.getBean(ManagementWebSecurityConfigurerAdapter.class);
-				bean.setEndpointHandlerMapping(mapping);
+				bean.setEndpointHandlerMapping(BeanFactoryUtils
+						.beansOfTypeIncludingAncestors(beanFactory,
+								EndpointHandlerMapping.class).values());
 			}
 			else {
-				logger.warn("No single bean of type "
+				logger.warn("No beans of type "
 						+ ManagementWebSecurityConfigurerAdapter.class.getSimpleName()
 						+ " found (this might make some endpoints inaccessible without authentication)");
 			}
