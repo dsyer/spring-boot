@@ -26,6 +26,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.actuate.endpoint.Endpoint;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,7 +43,15 @@ public class MvcEndpoints implements ApplicationContextAware, InitializingBean {
 
 	private final Set<MvcEndpoint> endpoints = new HashSet<MvcEndpoint>();
 
+	private final Set<MvcEndpoint> fallbacks = new HashSet<MvcEndpoint>();
+
 	private Set<Class<?>> customTypes;
+
+	private String contextPath;
+
+	public MvcEndpoints(String contextPath) {
+		this.contextPath = contextPath;
+	}
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext)
@@ -55,7 +64,14 @@ public class MvcEndpoints implements ApplicationContextAware, InitializingBean {
 		Collection<MvcEndpoint> existing = BeanFactoryUtils
 				.beansOfTypeIncludingAncestors(this.applicationContext, MvcEndpoint.class)
 				.values();
-		this.endpoints.addAll(existing);
+		for (MvcEndpoint endpoint : existing) {
+			if (isFallback(endpoint)) {
+				this.fallbacks.add(endpoint);
+			}
+			else {
+				this.endpoints.add(endpoint);
+			}
+		}
 		this.customTypes = findEndpointClasses(existing);
 		@SuppressWarnings("rawtypes")
 		Collection<Endpoint> delegates = BeanFactoryUtils.beansOfTypeIncludingAncestors(
@@ -65,6 +81,21 @@ public class MvcEndpoints implements ApplicationContextAware, InitializingBean {
 				this.endpoints.add(new EndpointMvcAdapter(endpoint));
 			}
 		}
+	}
+
+	public boolean isFallback(MvcEndpoint endpoint) {
+		return AnnotationUtils
+				.findAnnotation(endpoint.getClass(), FallbackEndpoint.class) != null
+				&& isHomePage(endpoint);
+	}
+
+	private boolean isHomePage(MvcEndpoint endpoint) {
+		String contextPath = this.contextPath;
+		if (contextPath == null) {
+			contextPath = "";
+		}
+		String path = contextPath + endpoint.getPath();
+		return "".equals(path) || "/".equals(path);
 	}
 
 	private Set<Class<?>> findEndpointClasses(Collection<MvcEndpoint> existing) {
@@ -80,6 +111,10 @@ public class MvcEndpoints implements ApplicationContextAware, InitializingBean {
 
 	public Set<? extends MvcEndpoint> getEndpoints() {
 		return this.endpoints;
+	}
+
+	public Set<? extends MvcEndpoint> getFallbackEndpoints() {
+		return this.fallbacks;
 	}
 
 	private boolean isGenericEndpoint(Class<?> type) {

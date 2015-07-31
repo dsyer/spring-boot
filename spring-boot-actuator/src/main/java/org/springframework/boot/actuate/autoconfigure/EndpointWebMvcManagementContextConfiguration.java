@@ -45,6 +45,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.Ordered;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.util.CollectionUtils;
@@ -98,6 +99,28 @@ public class EndpointWebMvcManagementContextConfiguration {
 		return mapping;
 	}
 
+	@Bean
+	@Autowired(required = false)
+	public EndpointHandlerMapping fallbackEndpointHandlerMapping() {
+		Set<? extends MvcEndpoint> endpoints = mvcEndpoints().getFallbackEndpoints();
+		CorsConfiguration corsConfiguration = getCorsConfiguration(this.corsProperties);
+		EndpointHandlerMapping mapping = new EndpointHandlerMapping(endpoints,
+				corsConfiguration);
+		mapping.setOrder(Ordered.LOWEST_PRECEDENCE - 50);
+		boolean disabled = this.managementServerProperties.getPort() != null
+				&& this.managementServerProperties.getPort() == -1;
+		mapping.setDisabled(disabled);
+		if (!disabled) {
+			mapping.setPrefix(this.managementServerProperties.getContextPath());
+		}
+		if (this.mappingCustomizers != null) {
+			for (EndpointHandlerMappingCustomizer customizer : this.mappingCustomizers) {
+				customizer.customize(mapping);
+			}
+		}
+		return mapping;
+	}
+
 	private CorsConfiguration getCorsConfiguration(EndpointCorsProperties properties) {
 		if (CollectionUtils.isEmpty(properties.getAllowedOrigins())) {
 			return null;
@@ -125,7 +148,7 @@ public class EndpointWebMvcManagementContextConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MvcEndpoints mvcEndpoints() {
-		return new MvcEndpoints();
+		return new MvcEndpoints(this.managementServerProperties.getContextPath());
 	}
 
 	@Bean

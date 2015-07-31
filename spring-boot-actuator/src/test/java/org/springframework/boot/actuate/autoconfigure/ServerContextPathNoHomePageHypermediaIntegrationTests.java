@@ -21,12 +21,11 @@ import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.autoconfigure.ServerContextPathHypermediaIntegrationTests.SpringBootHypermediaApplication;
+import org.springframework.boot.actuate.autoconfigure.ServerContextPathNoHomePageHypermediaIntegrationTests.SpringBootHypermediaApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
-import org.springframework.hateoas.ResourceSupport;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -36,25 +35,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = SpringBootHypermediaApplication.class)
 @WebAppConfiguration
 @IntegrationTest({ "server.port=0", "server.contextPath=/spring" })
 @DirtiesContext
-public class ServerContextPathHypermediaIntegrationTests {
+public class ServerContextPathNoHomePageHypermediaIntegrationTests {
 
 	@Value("${local.server.port}")
 	private int port;
 
 	@Test
-	public void linksAddedToJsonHomePage() throws Exception {
+	public void links() throws Exception {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
 		ResponseEntity<String> entity = new TestRestTemplate().exchange(
@@ -63,40 +60,22 @@ public class ServerContextPathHypermediaIntegrationTests {
 		assertEquals(HttpStatus.OK, entity.getStatusCode());
 		assertTrue("Wrong body: " + entity.getBody(),
 				entity.getBody().contains("\"_links\":"));
-		assertTrue("Wrong body: " + entity.getBody(),
-				entity.getBody().contains("\"message\":"));
-		assertTrue("Wrong body: " + entity.getBody(),
-				entity.getBody().contains("\"health\""));
 	}
 
 	@Test
-	public void browserNotAvailable() throws Exception {
+	public void browser() throws Exception {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
 		ResponseEntity<String> entity = new TestRestTemplate().exchange(
 				"http://localhost:" + this.port + "/spring/", HttpMethod.GET,
 				new HttpEntity<Void>(null, headers), String.class);
-		assertEquals(HttpStatus.NOT_ACCEPTABLE, entity.getStatusCode());
-		assertTrue("Wrong body: " + entity.getBody(),
-				entity.getBody().contains("Whitelabel Error"));
+		assertEquals(HttpStatus.OK, entity.getStatusCode());
+		assertTrue("Wrong body: " + entity.getBody(), entity.getBody().contains("<title"));
 	}
 
 	@MinimalActuatorHypermediaApplication
 	@RestController
 	public static class SpringBootHypermediaApplication {
-
-		@RequestMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
-		public ResourceSupport home() {
-			ResourceSupport resource = new ResourceSupport() {
-				@SuppressWarnings("unused")
-				public String getMessage() {
-					return "Hello World";
-				}
-			};
-			resource.add(linkTo(SpringBootHypermediaApplication.class).slash("/")
-					.withSelfRel());
-			return resource;
-		}
 
 		public static void main(String[] args) {
 			new SpringApplicationBuilder(SpringBootHypermediaApplication.class)

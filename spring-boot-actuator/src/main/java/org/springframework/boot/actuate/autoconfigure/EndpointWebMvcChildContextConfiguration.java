@@ -17,6 +17,7 @@
 package org.springframework.boot.actuate.autoconfigure;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -137,19 +138,22 @@ public class EndpointWebMvcChildContextConfiguration {
 
 		@Autowired
 		public void handlerMapping(MvcEndpoints endpoints,
-				ListableBeanFactory beanFactory, EndpointHandlerMapping mapping) {
-			// In a child context we definitely want to see the parent endpoints
-			mapping.setDetectHandlerMethodsInAncestorContexts(true);
-			postProcessMapping(beanFactory, mapping);
+				ListableBeanFactory beanFactory,
+				Collection<EndpointHandlerMapping> mappings) {
+			for (EndpointHandlerMapping mapping : mappings) {
+				// In a child context we definitely want to see the parent endpoints
+				mapping.setDetectHandlerMethodsInAncestorContexts(true);
+			}
+			postProcessMapping(beanFactory, mappings);
 		}
 
 		/**
 		 * Hook to allow additional post processing of {@link EndpointHandlerMapping}.
 		 * @param beanFactory the source bean factory
-		 * @param mapping the mapping to customize
+		 * @param mappings the mapping to customize
 		 */
 		protected void postProcessMapping(ListableBeanFactory beanFactory,
-				EndpointHandlerMapping mapping) {
+				Collection<EndpointHandlerMapping> mappings) {
 		}
 
 	}
@@ -165,14 +169,14 @@ public class EndpointWebMvcChildContextConfiguration {
 
 		@Override
 		protected void postProcessMapping(ListableBeanFactory beanFactory,
-				EndpointHandlerMapping mapping) {
+				Collection<EndpointHandlerMapping> mappings) {
 			// The parent context has the security filter, so we need to get it injected
 			// with our EndpointHandlerMapping if we can.
 			if (BeanFactoryUtils.beanNamesForTypeIncludingAncestors(beanFactory,
 					ManagementWebSecurityConfigurerAdapter.class).length > 0) {
 				ManagementWebSecurityConfigurerAdapter bean = beanFactory
 						.getBean(ManagementWebSecurityConfigurerAdapter.class);
-				bean.setEndpointHandlerMapping(BeanFactoryUtils
+				bean.setEndpointHandlerMappings(BeanFactoryUtils
 						.beansOfTypeIncludingAncestors(beanFactory,
 								EndpointHandlerMapping.class).values());
 			}

@@ -23,11 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PostConstruct;
 
-import org.springframework.beans.factory.ListableBeanFactory;
-import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.actuate.endpoint.mvc.ActuatorDocsEndpoint;
 import org.springframework.boot.actuate.endpoint.mvc.HalBrowserEndpoint;
 import org.springframework.boot.actuate.endpoint.mvc.HypermediaDisabled;
@@ -45,7 +41,6 @@ import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.boot.bind.RelaxedPropertyResolver;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ConditionContext;
@@ -53,9 +48,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.core.type.MethodMetadata;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.ResourceSupport;
@@ -68,7 +61,6 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.TypeUtils;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -157,99 +149,17 @@ public class EndpointWebMvcHypermediaManagementContextConfiguration {
 	@ConditionalOnProperty(value = "endpoints.links.enabled", matchIfMissing = true)
 	public static class LinksConfiguration {
 
+		@Autowired
+		private ResourceProperties resources;
+
 		@Bean
-		@Conditional(NotSpringDataRestHomePageCondition.class)
-		public LinksMvcEndpoint linksMvcEndpoint(ResourceProperties resources) {
-			String defaultPath = getDefaultPath(resources);
+		public LinksMvcEndpoint linksMvcEndpoint() {
+			String defaultPath = getDefaultPath(this.resources);
 			return new LinksMvcEndpoint(defaultPath);
 		}
 
 		private String getDefaultPath(ResourceProperties resources) {
 			return resources.getWelcomePage() != null ? "/links" : "";
-		}
-
-		private static class NotSpringDataRestHomePageCondition extends
-				SpringBootCondition {
-
-			private static final String REST_CONFIGURATION_CLASS = "org.springframework."
-					+ "data.rest.core.config.RepositoryRestConfiguration";
-
-			@Override
-			public ConditionOutcome getMatchOutcome(ConditionContext context,
-					AnnotatedTypeMetadata metadata) {
-				if (!ClassUtils.isPresent(REST_CONFIGURATION_CLASS, null)) {
-					return ConditionOutcome.match("Spring Data REST is not present");
-				}
-				return getMatchOutcome(context,
-						ClassUtils.resolveClassName(REST_CONFIGURATION_CLASS, null));
-			}
-
-			private ConditionOutcome getMatchOutcome(ConditionContext context,
-					Class<?> configurationClass) {
-				ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-				if (beanFactory.getBeanNamesForType(configurationClass, true, false).length == 0) {
-					return ConditionOutcome.match("Spring Data REST is not configured");
-				}
-				Environment environment = context.getEnvironment();
-				String path = getManagementContextPath(beanFactory, environment);
-				if (isHome(path)) {
-					path = getProperty(environment, "endpoints.links.", "path");
-					if (isHome(path)) {
-						return ConditionOutcome.noMatch("Management context path "
-								+ "is home and so is links path");
-					}
-					return ConditionOutcome.match("Management context path "
-							+ "is home but links path is not: '" + path + "'");
-				}
-				// N.B. we don't cover the case where the user has Spring Data REST
-				// but changes *its* home page - you'd have to instantiate the
-				// RepositoryRestConfiguration and look at it's basePath for that.
-				return ConditionOutcome.match("Management context path "
-						+ "is not home: '" + path + "'");
-			}
-
-			private String getManagementContextPath(
-					ConfigurableListableBeanFactory beanFactory, Environment environment) {
-				String path = getProperty(environment, "management.", "contextPath");
-				if (path == null
-						&& hasCustomBeanDefinition(beanFactory,
-								ManagementServerProperties.class,
-								ManagementServerPropertiesAutoConfiguration.class)) {
-					path = beanFactory.getBean(ManagementServerProperties.class)
-							.getContextPath();
-				}
-				return path;
-			}
-
-			private boolean isHome(String path) {
-				return path == null || "".equals(path) || "/".equals(path);
-			}
-
-			private String getProperty(Environment environment, String prefix, String name) {
-				RelaxedPropertyResolver resolver = new RelaxedPropertyResolver(
-						environment, prefix);
-				return resolver.getProperty(name, String.class);
-			}
-
-			private <T> boolean hasCustomBeanDefinition(
-					ConfigurableListableBeanFactory beanFactory, Class<T> type,
-					Class<?> configClass) {
-				String[] names = beanFactory.getBeanNamesForType(type, true, false);
-				if (names == null || names.length != 1) {
-					return false;
-				}
-				BeanDefinition definition = beanFactory.getBeanDefinition(names[0]);
-				if (definition instanceof AnnotatedBeanDefinition) {
-					MethodMetadata factoryMethodMetadata = ((AnnotatedBeanDefinition) definition)
-							.getFactoryMethodMetadata();
-					if (factoryMethodMetadata != null) {
-						String className = factoryMethodMetadata.getDeclaringClassName();
-						return !configClass.getName().equals(className);
-					}
-				}
-				return true;
-			}
-
 		}
 
 		/**

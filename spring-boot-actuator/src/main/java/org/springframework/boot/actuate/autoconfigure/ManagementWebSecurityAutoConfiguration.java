@@ -224,7 +224,7 @@ public class ManagementWebSecurityAutoConfiguration {
 		@Autowired(required = false)
 		private Collection<EndpointHandlerMapping> endpointHandlerMappings;
 
-		public void setEndpointHandlerMapping(
+		public void setEndpointHandlerMappings(
 				Collection<EndpointHandlerMapping> endpointHandlerMappings) {
 			this.endpointHandlerMappings = endpointHandlerMappings;
 		}

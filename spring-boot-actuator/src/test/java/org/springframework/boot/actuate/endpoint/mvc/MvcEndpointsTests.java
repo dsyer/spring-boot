@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class MvcEndpointsTests {
 
-	private MvcEndpoints endpoints = new MvcEndpoints();
+	private MvcEndpoints endpoints = new MvcEndpoints("");
 
 	private StaticApplicationContext context = new StaticApplicationContext();
 

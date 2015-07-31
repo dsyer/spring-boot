@@ -25,11 +25,12 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 /**
- * {@link MvcEndpoint} to support the Spring Data HAL browser.
+ * {@link MvcEndpoint} to support the HAL browser as an HTML endpoint.
  *
  * @author Dave Syer
  * @since 1.3.0
  */
+@FallbackEndpoint
 @ConfigurationProperties("endpoints.hal")
 public class HalBrowserEndpoint extends WebMvcConfigurerAdapter implements MvcEndpoint {
 

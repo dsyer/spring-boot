@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * @author Dave Syer
  * @since 1.3.0
  */
+@FallbackEndpoint
 @ConfigurationProperties("endpoints.links")
 public class LinksMvcEndpoint implements MvcEndpoint {
 
