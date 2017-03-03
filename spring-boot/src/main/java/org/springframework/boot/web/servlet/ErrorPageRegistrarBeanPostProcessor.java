@@ -22,9 +22,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
 /**
@@ -35,16 +36,17 @@ import org.springframework.core.annotation.AnnotationAwareOrderComparator;
  * @since 1.4.0
  */
 public class ErrorPageRegistrarBeanPostProcessor
-		implements BeanPostProcessor, ApplicationContextAware {
+		implements BeanPostProcessor, BeanFactoryAware {
 
-	private ApplicationContext applicationContext;
+	private ListableBeanFactory applicationContext;
 
 	private List<ErrorPageRegistrar> registrars;
 
 	@Override
-	public void setApplicationContext(ApplicationContext applicationContext)
-			throws BeansException {
-		this.applicationContext = applicationContext;
+	public void setBeanFactory(BeanFactory applicationContext) throws BeansException {
+		if (applicationContext instanceof ListableBeanFactory) {
+			this.applicationContext = (ListableBeanFactory) applicationContext;
+		}
 	}
 
 	@Override
@@ -69,14 +71,14 @@ public class ErrorPageRegistrarBeanPostProcessor
 	}
 
 	private Collection<ErrorPageRegistrar> getRegistrars() {
-		if (this.registrars == null) {
+		if (this.registrars == null && this.applicationContext != null) {
 			// Look up does not include the parent context
 			this.registrars = new ArrayList<ErrorPageRegistrar>(this.applicationContext
 					.getBeansOfType(ErrorPageRegistrar.class, false, false).values());
 			Collections.sort(this.registrars, AnnotationAwareOrderComparator.INSTANCE);
 			this.registrars = Collections.unmodifiableList(this.registrars);
 		}
-		return this.registrars;
+		return this.registrars == null ? Collections.emptyList() : this.registrars;
 	}
 
 }

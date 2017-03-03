@@ -22,9 +22,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
 /**
@@ -35,16 +36,17 @@ import org.springframework.core.annotation.AnnotationAwareOrderComparator;
  * @author Phillip Webb
  */
 public class EmbeddedServletContainerCustomizerBeanPostProcessor
-		implements BeanPostProcessor, ApplicationContextAware {
+		implements BeanPostProcessor, BeanFactoryAware {
 
-	private ApplicationContext applicationContext;
+	private ListableBeanFactory applicationContext;
 
 	private List<EmbeddedServletContainerCustomizer> customizers;
 
 	@Override
-	public void setApplicationContext(ApplicationContext applicationContext)
-			throws BeansException {
-		this.applicationContext = applicationContext;
+	public void setBeanFactory(BeanFactory applicationContext) throws BeansException {
+		if (applicationContext instanceof ListableBeanFactory) {
+			this.applicationContext = (ListableBeanFactory) applicationContext;
+		}
 	}
 
 	@Override
@@ -70,7 +72,7 @@ public class EmbeddedServletContainerCustomizerBeanPostProcessor
 	}
 
 	private Collection<EmbeddedServletContainerCustomizer> getCustomizers() {
-		if (this.customizers == null) {
+		if (this.customizers == null && this.applicationContext != null) {
 			// Look up does not include the parent context
 			this.customizers = new ArrayList<EmbeddedServletContainerCustomizer>(
 					this.applicationContext
@@ -80,7 +82,7 @@ public class EmbeddedServletContainerCustomizerBeanPostProcessor
 			Collections.sort(this.customizers, AnnotationAwareOrderComparator.INSTANCE);
 			this.customizers = Collections.unmodifiableList(this.customizers);
 		}
-		return this.customizers;
+		return this.customizers == null ? Collections.emptyList() : this.customizers;
 	}
 
 }

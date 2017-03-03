@@ -19,6 +19,7 @@ package org.springframework.boot.autoconfigure.web;
 import javax.servlet.Servlet;
 
 import io.undertow.Undertow;
+
 import org.apache.catalina.startup.Tomcat;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Loader;
@@ -29,8 +30,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -136,17 +138,24 @@ public class EmbeddedServletContainerAutoConfiguration {
 			if (ObjectUtils.isEmpty(this.beanFactory.getBeanNamesForType(
 					EmbeddedServletContainerCustomizerBeanPostProcessor.class, true,
 					false))) {
+				BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(
+						EmbeddedServletContainerCustomizerBeanPostProcessor.class);
+				builder.addPropertyValue("beanFactory", beanFactory);
+				AbstractBeanDefinition bean = builder.getBeanDefinition();
+				bean.setSynthetic(true);
 				registry.registerBeanDefinition(
-						"embeddedServletContainerCustomizerBeanPostProcessor",
-						new RootBeanDefinition(
-								EmbeddedServletContainerCustomizerBeanPostProcessor.class));
+						"embeddedServletContainerCustomizerBeanPostProcessor", bean);
 
 			}
 			if (ObjectUtils.isEmpty(this.beanFactory.getBeanNamesForType(
 					ErrorPageRegistrarBeanPostProcessor.class, true, false))) {
+				BeanDefinitionBuilder builder = BeanDefinitionBuilder
+						.rootBeanDefinition(ErrorPageRegistrarBeanPostProcessor.class);
+				builder.addPropertyValue("beanFactory", beanFactory);
+				AbstractBeanDefinition bean = builder.getBeanDefinition();
+				bean.setSynthetic(true);
 				registry.registerBeanDefinition("errorPageRegistrarBeanPostProcessor",
-						new RootBeanDefinition(
-								ErrorPageRegistrarBeanPostProcessor.class));
+						bean);
 
 			}
 		}
