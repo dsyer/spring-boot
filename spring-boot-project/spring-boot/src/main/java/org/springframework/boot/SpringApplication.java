@@ -16,7 +16,6 @@
 
 package org.springframework.boot;
 
-import java.lang.reflect.Constructor;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,7 +72,6 @@ import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
@@ -194,6 +192,8 @@ public class SpringApplication {
 
 	private static final Log logger = LogFactory.getLog(SpringApplication.class);
 
+	private final ExtensionResolver extensionResolver;
+
 	private Set<Class<?>> primarySources;
 
 	private Set<String> sources = new LinkedHashSet<>();
@@ -262,15 +262,29 @@ public class SpringApplication {
 	 * @see #run(Class, String[])
 	 * @see #setSources(Set)
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
+		this(resourceLoader, new SpringFactoriesExtensionResolver(), primarySources);
+	}
+
+	/**
+	 * Create a new {@link SpringApplication} instance. The application context will load
+	 * beans from the specified primary sources (see {@link SpringApplication class-level}
+	 * documentation for details. The instance can be customized before calling
+	 * {@link #run(String...)}.
+	 * @param resourceLoader the resource loader to use
+	 * @param extensionResolver the extension resolver to use
+	 * @param primarySources the primary bean sources
+	 * @see #run(Class, String[])
+	 * @see #setSources(Set)
+	 */
+	public SpringApplication(ResourceLoader resourceLoader,
+			ExtensionResolver extensionResolver, Class<?>... primarySources) {
 		this.resourceLoader = resourceLoader;
 		Assert.notNull(primarySources, "PrimarySources must not be null");
 		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
 		this.webApplicationType = WebApplicationType.deduceFromClasspath();
-		setInitializers((Collection) getSpringFactoriesInstances(
-				ApplicationContextInitializer.class));
-		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+		Assert.notNull(extensionResolver, "Extension loader must not be null");
+		this.extensionResolver = extensionResolver;
 		this.mainApplicationClass = deduceMainApplicationClass();
 	}
 
@@ -311,9 +325,10 @@ public class SpringApplication {
 			configureIgnoreBeanInfo(environment);
 			Banner printedBanner = printBanner(environment);
 			context = createApplicationContext();
-			exceptionReporters = getSpringFactoriesInstances(
-					SpringBootExceptionReporter.class,
-					new Class[] { ConfigurableApplicationContext.class }, context);
+			exceptionReporters = getExtensionInstances(SpringBootExceptionReporter.class,
+					new Class[] { SpringApplication.class,
+							ConfigurableApplicationContext.class },
+					this, context);
 			prepareContext(context, environment, listeners, applicationArguments,
 					printedBanner);
 			refreshContext(context);
@@ -393,6 +408,8 @@ public class SpringApplication {
 			context.addBeanFactoryPostProcessor(
 					new LazyInitializationBeanFactoryPostProcessor());
 		}
+		beanFactory.registerSingleton("springBootExtensionResolver",
+				this.extensionResolver);
 		// Load the sources
 		Set<Object> sources = getAllSources();
 		Assert.notEmpty(sources, "Sources must not be empty");
@@ -419,46 +436,19 @@ public class SpringApplication {
 
 	private SpringApplicationRunListeners getRunListeners(String[] args) {
 		Class<?>[] types = new Class<?>[] { SpringApplication.class, String[].class };
-		return new SpringApplicationRunListeners(logger, getSpringFactoriesInstances(
+		return new SpringApplicationRunListeners(logger, getExtensionInstances(
 				SpringApplicationRunListener.class, types, this, args));
 	}
 
-	private <T> Collection<T> getSpringFactoriesInstances(Class<T> type) {
-		return getSpringFactoriesInstances(type, new Class<?>[] {});
+	private <T> Collection<T> getExtensionInstances(Class<T> type) {
+		return getExtensionInstances(type, new Class<?>[] {});
 	}
 
-	private <T> Collection<T> getSpringFactoriesInstances(Class<T> type,
+	private <T> Collection<T> getExtensionInstances(Class<T> type,
 			Class<?>[] parameterTypes, Object... args) {
 		ClassLoader classLoader = getClassLoader();
-		// Use names and ensure unique to protect against duplicates
-		Set<String> names = new LinkedHashSet<>(
-				SpringFactoriesLoader.loadFactoryNames(type, classLoader));
-		List<T> instances = createSpringFactoriesInstances(type, parameterTypes,
-				classLoader, args, names);
-		AnnotationAwareOrderComparator.sort(instances);
-		return instances;
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> List<T> createSpringFactoriesInstances(Class<T> type,
-			Class<?>[] parameterTypes, ClassLoader classLoader, Object[] args,
-			Set<String> names) {
-		List<T> instances = new ArrayList<>(names.size());
-		for (String name : names) {
-			try {
-				Class<?> instanceClass = ClassUtils.forName(name, classLoader);
-				Assert.isAssignable(type, instanceClass);
-				Constructor<?> constructor = instanceClass
-						.getDeclaredConstructor(parameterTypes);
-				T instance = (T) BeanUtils.instantiateClass(constructor, args);
-				instances.add(instance);
-			}
-			catch (Throwable ex) {
-				throw new IllegalArgumentException(
-						"Cannot instantiate " + type + " : " + name, ex);
-			}
-		}
-		return instances;
+		return this.extensionResolver.resolveExtensions(type, classLoader, parameterTypes,
+				args);
 	}
 
 	private ConfigurableEnvironment getOrCreateEnvironment() {
@@ -744,6 +734,16 @@ public class SpringApplication {
 			return this.resourceLoader.getClassLoader();
 		}
 		return ClassUtils.getDefaultClassLoader();
+	}
+
+	/**
+	 * Returns the {@link ExtensionResolver} used by this application to resolve
+	 * extensions.
+	 * @return the extension resolver
+	 * @since 2.2
+	 */
+	public ExtensionResolver getExtensionResolver() {
+		return this.extensionResolver;
 	}
 
 	/**
@@ -1211,6 +1211,9 @@ public class SpringApplication {
 	 * @param initializers the initializers to add
 	 */
 	public void addInitializers(ApplicationContextInitializer<?>... initializers) {
+		if (this.initializers == null) {
+			loadDefaultInitializers();
+		}
 		this.initializers.addAll(Arrays.asList(initializers));
 	}
 
@@ -1220,7 +1223,16 @@ public class SpringApplication {
 	 * @return the initializers
 	 */
 	public Set<ApplicationContextInitializer<?>> getInitializers() {
+		if (this.initializers == null) {
+			loadDefaultInitializers();
+		}
 		return asUnmodifiableOrderedSet(this.initializers);
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private void loadDefaultInitializers() {
+		setInitializers(
+				(Collection) getExtensionInstances(ApplicationContextInitializer.class));
 	}
 
 	/**
@@ -1238,6 +1250,9 @@ public class SpringApplication {
 	 * @param listeners the listeners to add
 	 */
 	public void addListeners(ApplicationListener<?>... listeners) {
+		if (this.listeners == null) {
+			loadDefaultListeners();
+		}
 		this.listeners.addAll(Arrays.asList(listeners));
 	}
 
@@ -1248,7 +1263,15 @@ public class SpringApplication {
 	 * @return the listeners
 	 */
 	public Set<ApplicationListener<?>> getListeners() {
+		if (this.listeners == null) {
+			loadDefaultListeners();
+		}
 		return asUnmodifiableOrderedSet(this.listeners);
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private void loadDefaultListeners() {
+		setListeners((Collection) getExtensionInstances(ApplicationListener.class));
 	}
 
 	/**

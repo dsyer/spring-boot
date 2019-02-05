@@ -25,7 +25,9 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.boot.ExtensionResolver;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -37,7 +39,6 @@ import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextConfigurationAttributes;
 import org.springframework.test.context.ContextHierarchy;
@@ -113,8 +114,8 @@ public class SpringBootTestContextBootstrapper extends DefaultTestContextBootstr
 	@Override
 	protected Set<Class<? extends TestExecutionListener>> getDefaultTestExecutionListenerClasses() {
 		Set<Class<? extends TestExecutionListener>> listeners = super.getDefaultTestExecutionListenerClasses();
-		List<DefaultTestExecutionListenersPostProcessor> postProcessors = SpringFactoriesLoader
-				.loadFactories(DefaultTestExecutionListenersPostProcessor.class,
+		List<DefaultTestExecutionListenersPostProcessor> postProcessors = getExtensionResolver()
+				.resolveExtensions(DefaultTestExecutionListenersPostProcessor.class,
 						getClass().getClassLoader());
 		for (DefaultTestExecutionListenersPostProcessor postProcessor : postProcessors) {
 			listeners = postProcessor.postProcessDefaultTestExecutionListeners(listeners);
@@ -352,6 +353,10 @@ public class SpringBootTestContextBootstrapper extends DefaultTestContextBootstr
 	private boolean isListeningOnPort(WebEnvironment webEnvironment) {
 		return webEnvironment == WebEnvironment.DEFINED_PORT
 				|| webEnvironment == WebEnvironment.RANDOM_PORT;
+	}
+
+	protected ExtensionResolver getExtensionResolver() {
+		return new SpringFactoriesExtensionResolver();
 	}
 
 	/**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.boot.test.context;
 
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.boot.context.config.ConfigFileApplicationListener;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -38,7 +39,7 @@ public class ConfigFileApplicationContextInitializer
 		new ConfigFileApplicationListener() {
 			public void apply() {
 				addPropertySources(applicationContext.getEnvironment(),
-						applicationContext);
+						applicationContext, new SpringFactoriesExtensionResolver());
 				addPostProcessors(applicationContext);
 			}
 		}.apply();

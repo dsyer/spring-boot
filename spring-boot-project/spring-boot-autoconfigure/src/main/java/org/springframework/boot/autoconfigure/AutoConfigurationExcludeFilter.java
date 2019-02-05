@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,17 @@
 package org.springframework.boot.autoconfigure;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.boot.ExtensionResolver;
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.TypeFilter;
@@ -32,15 +38,28 @@ import org.springframework.core.type.filter.TypeFilter;
  * @author Stephane Nicoll
  * @since 1.5.0
  */
-public class AutoConfigurationExcludeFilter implements TypeFilter, BeanClassLoaderAware {
+public class AutoConfigurationExcludeFilter
+		implements TypeFilter, BeanClassLoaderAware, BeanFactoryAware {
 
 	private ClassLoader beanClassLoader;
+
+	private ExtensionResolver extensionResolver;
 
 	private volatile List<String> autoConfigurations;
 
 	@Override
 	public void setBeanClassLoader(ClassLoader beanClassLoader) {
 		this.beanClassLoader = beanClassLoader;
+	}
+
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		try {
+			this.extensionResolver = beanFactory.getBean(ExtensionResolver.class);
+		}
+		catch (NoSuchBeanDefinitionException ex) {
+			this.extensionResolver = new SpringFactoriesExtensionResolver();
+		}
 	}
 
 	@Override
@@ -61,8 +80,9 @@ public class AutoConfigurationExcludeFilter implements TypeFilter, BeanClassLoad
 
 	protected List<String> getAutoConfigurations() {
 		if (this.autoConfigurations == null) {
-			this.autoConfigurations = SpringFactoriesLoader.loadFactoryNames(
-					EnableAutoConfiguration.class, this.beanClassLoader);
+			this.autoConfigurations = new ArrayList<>(
+					this.extensionResolver.resolveExtensionNames(
+							EnableAutoConfiguration.class, this.beanClassLoader));
 		}
 		return this.autoConfigurations;
 	}

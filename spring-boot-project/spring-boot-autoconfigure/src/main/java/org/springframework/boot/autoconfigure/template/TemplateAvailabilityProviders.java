@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.boot.ExtensionResolver;
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.util.Assert;
 
 /**
@@ -76,17 +78,39 @@ public class TemplateAvailabilityProviders {
 	 * @param applicationContext the source application context
 	 */
 	public TemplateAvailabilityProviders(ApplicationContext applicationContext) {
-		this((applicationContext != null) ? applicationContext.getClassLoader() : null);
+		this(getExtensionResolver(applicationContext), (applicationContext != null)
+				? applicationContext.getClassLoader() : null);
+	}
+
+	private static ExtensionResolver getExtensionResolver(ApplicationContext context) {
+		if (context != null) {
+			try {
+				return context.getBean(ExtensionResolver.class);
+			}
+			catch (NoSuchBeanDefinitionException ex) {
+				// Continue
+			}
+		}
+		return new SpringFactoriesExtensionResolver();
 	}
 
 	/**
 	 * Create a new {@link TemplateAvailabilityProviders} instance.
 	 * @param classLoader the source class loader
+	 * @deprecated since 2.2 in favor of
+	 * {@link #TemplateAvailabilityProviders(ExtensionResolver, ClassLoader)}
 	 */
+	@Deprecated
 	public TemplateAvailabilityProviders(ClassLoader classLoader) {
+		this(new SpringFactoriesExtensionResolver(), classLoader);
+	}
+
+	public TemplateAvailabilityProviders(ExtensionResolver extensionLoader,
+			ClassLoader classLoader) {
+		Assert.notNull(extensionLoader, "ExtensionLoader must not be null");
 		Assert.notNull(classLoader, "ClassLoader must not be null");
-		this.providers = SpringFactoriesLoader
-				.loadFactories(TemplateAvailabilityProvider.class, classLoader);
+		this.providers = extensionLoader
+				.resolveExtensions(TemplateAvailabilityProvider.class, classLoader);
 	}
 
 	/**

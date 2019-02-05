@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.boot.ExtensionResolver;
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
 import org.springframework.context.annotation.DeferredImportSelector;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.SimpleMetadataReaderFactory;
@@ -36,7 +41,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * Selects configuration classes for the management context configuration. Entries are
- * loaded from {@code /META-INF/spring.factories} under the
+ * loaded using {@link ExtensionResolver} under the
  * {@code org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration}
  * key.
  *
@@ -47,7 +52,9 @@ import org.springframework.util.StringUtils;
  */
 @Order(Ordered.LOWEST_PRECEDENCE)
 class ManagementContextConfigurationImportSelector
-		implements DeferredImportSelector, BeanClassLoaderAware {
+		implements DeferredImportSelector, BeanClassLoaderAware, BeanFactoryAware {
+
+	private ExtensionResolver extensionResolver;
 
 	private ClassLoader classLoader;
 
@@ -67,6 +74,16 @@ class ManagementContextConfigurationImportSelector
 			}
 		}
 		return StringUtils.toStringArray(names);
+	}
+
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		try {
+			this.extensionResolver = beanFactory.getBean(ExtensionResolver.class);
+		}
+		catch (NoSuchBeanDefinitionException ex) {
+			this.extensionResolver = new SpringFactoriesExtensionResolver();
+		}
 	}
 
 	private List<ManagementConfiguration> getConfigurations() {
@@ -92,8 +109,8 @@ class ManagementContextConfigurationImportSelector
 	}
 
 	protected List<String> loadFactoryNames() {
-		return SpringFactoriesLoader
-				.loadFactoryNames(ManagementContextConfiguration.class, this.classLoader);
+		return new ArrayList<>(this.extensionResolver.resolveExtensionNames(
+				ManagementContextConfiguration.class, this.classLoader));
 	}
 
 	@Override

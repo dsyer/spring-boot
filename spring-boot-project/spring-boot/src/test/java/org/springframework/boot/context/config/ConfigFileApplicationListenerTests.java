@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.boot.ExtensionResolver;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
@@ -1097,7 +1098,8 @@ public class ConfigFileApplicationListenerTests {
 			extends ConfigFileApplicationListener {
 
 		@Override
-		List<EnvironmentPostProcessor> loadPostProcessors() {
+		List<EnvironmentPostProcessor> loadPostProcessors(
+				ExtensionResolver extensionLoader) {
 			return new ArrayList<>(Collections
 					.singletonList(new LowestPrecedenceEnvironmentPostProcessor()));
 		}

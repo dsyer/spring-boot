@@ -31,7 +31,6 @@ import org.springframework.boot.context.annotation.DeterminableImports;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.LinkedMultiValueMap;
@@ -98,7 +97,7 @@ class ImportAutoConfigurationImportSelector extends AutoConfigurationImportSelec
 	}
 
 	protected Collection<String> loadFactoryNames(Class<?> source) {
-		return SpringFactoriesLoader.loadFactoryNames(source,
+		return getExtensionResolver().resolveExtensionNames(source,
 				getClass().getClassLoader());
 	}
 

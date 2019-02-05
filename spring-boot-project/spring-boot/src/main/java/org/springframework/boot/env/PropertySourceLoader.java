@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package org.springframework.boot.env;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.boot.ExtensionResolver;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 
 /**
- * Strategy interface located via {@link SpringFactoriesLoader} and used to load a
+ * Strategy interface located via {@link ExtensionResolver} and used to load a
  * {@link PropertySource}.
  *
  * @author Dave Syer

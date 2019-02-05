@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.Environment;
@@ -88,7 +89,8 @@ public class FailureAnalyzersTests {
 	private void analyzeAndReport(String factoriesName, Throwable failure) {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 		ClassLoader classLoader = new CustomSpringFactoriesClassLoader(factoriesName);
-		new FailureAnalyzers(context, classLoader).reportException(failure);
+		new FailureAnalyzers(new SpringApplication(), context, classLoader)
+				.reportException(failure);
 	}
 
 	static class BasicFailureAnalyzer implements FailureAnalyzer {

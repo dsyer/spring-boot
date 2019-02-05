@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import org.springframework.boot.ExtensionResolver;
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.mock.env.MockEnvironment;
@@ -74,6 +76,8 @@ public class TemplateAvailabilityProvidersTests {
 	public void createWhenUsingApplicationContextShouldLoadProviders() {
 		ApplicationContext applicationContext = mock(ApplicationContext.class);
 		given(applicationContext.getClassLoader()).willReturn(this.classLoader);
+		given(applicationContext.getBean(ExtensionResolver.class))
+				.willReturn(new SpringFactoriesExtensionResolver());
 		TemplateAvailabilityProviders providers = new TemplateAvailabilityProviders(
 				applicationContext);
 		assertThat(providers.getProviders()).isNotEmpty();
@@ -83,14 +87,15 @@ public class TemplateAvailabilityProvidersTests {
 	@Test
 	public void createWhenClassLoaderIsNullShouldThrowException() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new TemplateAvailabilityProviders((ClassLoader) null))
+				.isThrownBy(() -> new TemplateAvailabilityProviders(
+						new SpringFactoriesExtensionResolver(), (ClassLoader) null))
 				.withMessageContaining("ClassLoader must not be null");
 	}
 
 	@Test
 	public void createWhenUsingClassLoaderShouldLoadProviders() {
 		TemplateAvailabilityProviders providers = new TemplateAvailabilityProviders(
-				this.classLoader);
+				new SpringFactoriesExtensionResolver(), this.classLoader);
 		assertThat(providers.getProviders()).isNotEmpty();
 	}
 

@@ -44,6 +44,7 @@ public class SharedMetadataReaderFactoryContextInitializerTests {
 	public void checkOrderOfInitializer() {
 		SpringApplication application = new SpringApplication(TestConfig.class);
 		application.setWebApplicationType(WebApplicationType.NONE);
+		application.getInitializers();
 		@SuppressWarnings("unchecked")
 		List<ApplicationContextInitializer<?>> initializers = (List<ApplicationContextInitializer<?>>) ReflectionTestUtils
 				.getField(application, "initializers");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.ExtensionResolver;
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.ResourceLoaderAware;
@@ -49,7 +51,6 @@ import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
@@ -89,6 +90,8 @@ public class AutoConfigurationImportSelector
 	private ClassLoader beanClassLoader;
 
 	private ResourceLoader resourceLoader;
+
+	private ExtensionResolver extensionResolver;
 
 	@Override
 	public String[] selectImports(AnnotationMetadata annotationMetadata) {
@@ -169,7 +172,7 @@ public class AutoConfigurationImportSelector
 
 	/**
 	 * Return the auto-configuration class names that should be considered. By default
-	 * this method will load candidates using {@link SpringFactoriesLoader} with
+	 * this method will load candidates using {@link ExtensionResolver} with
 	 * {@link #getSpringFactoriesLoaderFactoryClass()}.
 	 * @param metadata the source metadata
 	 * @param attributes the {@link #getAttributes(AnnotationMetadata) annotation
@@ -178,8 +181,9 @@ public class AutoConfigurationImportSelector
 	 */
 	protected List<String> getCandidateConfigurations(AnnotationMetadata metadata,
 			AnnotationAttributes attributes) {
-		List<String> configurations = SpringFactoriesLoader.loadFactoryNames(
-				getSpringFactoriesLoaderFactoryClass(), getBeanClassLoader());
+		List<String> configurations = new ArrayList<>(
+				getExtensionResolver().resolveExtensionNames(
+						getSpringFactoriesLoaderFactoryClass(), getBeanClassLoader()));
 		Assert.notEmpty(configurations,
 				"No auto configuration classes found in META-INF/spring.factories. If you "
 						+ "are using a custom packaging, make sure that file is correct.");
@@ -187,7 +191,7 @@ public class AutoConfigurationImportSelector
 	}
 
 	/**
-	 * Return the class used by {@link SpringFactoriesLoader} to load configuration
+	 * Return the class used by {@link ExtensionResolver} to load configuration
 	 * candidates.
 	 * @return the factory class
 	 */
@@ -287,8 +291,8 @@ public class AutoConfigurationImportSelector
 	}
 
 	protected List<AutoConfigurationImportFilter> getAutoConfigurationImportFilters() {
-		return SpringFactoriesLoader.loadFactories(AutoConfigurationImportFilter.class,
-				this.beanClassLoader);
+		return getExtensionResolver().resolveExtensions(
+				AutoConfigurationImportFilter.class, this.beanClassLoader);
 	}
 
 	protected final <T> List<T> removeDuplicates(List<T> list) {
@@ -314,8 +318,8 @@ public class AutoConfigurationImportSelector
 	}
 
 	protected List<AutoConfigurationImportListener> getAutoConfigurationImportListeners() {
-		return SpringFactoriesLoader.loadFactories(AutoConfigurationImportListener.class,
-				this.beanClassLoader);
+		return getExtensionResolver().resolveExtensions(
+				AutoConfigurationImportListener.class, this.beanClassLoader);
 	}
 
 	private void invokeAwareMethods(Object instance) {
@@ -344,6 +348,24 @@ public class AutoConfigurationImportSelector
 
 	protected final ConfigurableListableBeanFactory getBeanFactory() {
 		return this.beanFactory;
+	}
+
+	protected final ExtensionResolver getExtensionResolver() {
+		if (this.extensionResolver == null) {
+			if (this.beanFactory != null) {
+				try {
+					this.extensionResolver = this.beanFactory
+							.getBean(ExtensionResolver.class);
+				}
+				catch (NoSuchBeanDefinitionException ex) {
+					// Continue
+				}
+			}
+			if (this.extensionResolver == null) {
+				this.extensionResolver = new SpringFactoriesExtensionResolver();
+			}
+		}
+		return this.extensionResolver;
 	}
 
 	@Override

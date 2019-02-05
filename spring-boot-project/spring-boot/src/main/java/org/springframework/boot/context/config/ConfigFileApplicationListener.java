@@ -37,7 +37,9 @@ import org.apache.commons.logging.Log;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.ExtensionResolver;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.context.event.ApplicationPreparedEvent;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -63,7 +65,6 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -176,7 +177,8 @@ public class ConfigFileApplicationListener
 
 	private void onApplicationEnvironmentPreparedEvent(
 			ApplicationEnvironmentPreparedEvent event) {
-		List<EnvironmentPostProcessor> postProcessors = loadPostProcessors();
+		List<EnvironmentPostProcessor> postProcessors = loadPostProcessors(
+				event.getSpringApplication().getExtensionResolver());
 		postProcessors.add(this);
 		AnnotationAwareOrderComparator.sort(postProcessors);
 		for (EnvironmentPostProcessor postProcessor : postProcessors) {
@@ -185,15 +187,17 @@ public class ConfigFileApplicationListener
 		}
 	}
 
-	List<EnvironmentPostProcessor> loadPostProcessors() {
-		return SpringFactoriesLoader.loadFactories(EnvironmentPostProcessor.class,
+	List<EnvironmentPostProcessor> loadPostProcessors(
+			ExtensionResolver extensionResolver) {
+		return extensionResolver.resolveExtensions(EnvironmentPostProcessor.class,
 				getClass().getClassLoader());
 	}
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment,
 			SpringApplication application) {
-		addPropertySources(environment, application.getResourceLoader());
+		addPropertySources(environment, application.getResourceLoader(),
+				application.getExtensionResolver());
 	}
 
 	private void onApplicationPreparedEvent(ApplicationEvent event) {
@@ -206,11 +210,27 @@ public class ConfigFileApplicationListener
 	 * @param environment the environment to add source to
 	 * @param resourceLoader the resource loader
 	 * @see #addPostProcessors(ConfigurableApplicationContext)
+	 * @deprecated since 2.2 in favor of
+	 * {@link #addPropertySources(ConfigurableEnvironment, ResourceLoader, ExtensionResolver)}
 	 */
+	@Deprecated
 	protected void addPropertySources(ConfigurableEnvironment environment,
 			ResourceLoader resourceLoader) {
+		this.addPropertySources(environment, resourceLoader,
+				new SpringFactoriesExtensionResolver());
+	}
+
+	/**
+	 * Add config file property sources to the specified environment.
+	 * @param environment the environment to add source to
+	 * @param resourceLoader the resource loader
+	 * @param extensionResolver the extension resolver
+	 * @see #addPostProcessors(ConfigurableApplicationContext)
+	 */
+	protected void addPropertySources(ConfigurableEnvironment environment,
+			ResourceLoader resourceLoader, ExtensionResolver extensionResolver) {
 		RandomValuePropertySource.addToEnvironment(environment);
-		new Loader(environment, resourceLoader).load();
+		new Loader(environment, resourceLoader, extensionResolver).load();
 	}
 
 	/**
@@ -314,13 +334,14 @@ public class ConfigFileApplicationListener
 
 		private Map<DocumentsCacheKey, List<Document>> loadDocumentsCache = new HashMap<>();
 
-		Loader(ConfigurableEnvironment environment, ResourceLoader resourceLoader) {
+		Loader(ConfigurableEnvironment environment, ResourceLoader resourceLoader,
+				ExtensionResolver extensionResolver) {
 			this.environment = environment;
 			this.placeholdersResolver = new PropertySourcesPlaceholdersResolver(
 					this.environment);
 			this.resourceLoader = (resourceLoader != null) ? resourceLoader
 					: new DefaultResourceLoader();
-			this.propertySourceLoaders = SpringFactoriesLoader.loadFactories(
+			this.propertySourceLoaders = extensionResolver.resolveExtensions(
 					PropertySourceLoader.class, getClass().getClassLoader());
 		}
 
