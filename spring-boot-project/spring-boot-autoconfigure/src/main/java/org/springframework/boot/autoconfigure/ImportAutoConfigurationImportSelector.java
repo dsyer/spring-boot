@@ -97,8 +97,10 @@ class ImportAutoConfigurationImportSelector extends AutoConfigurationImportSelec
 	}
 
 	protected Collection<String> loadFactoryNames(Class<?> source) {
-		return getExtensionResolver().resolveExtensionNames(source,
-				getClass().getClassLoader());
+		return new CompositeAutoConfigurationResolver(
+				getExtensionResolver().resolveExtensions(AutoConfigurationResolver.class,
+						getClass().getClassLoader())).resolve(source,
+								getClass().getClassLoader());
 	}
 
 	@Override

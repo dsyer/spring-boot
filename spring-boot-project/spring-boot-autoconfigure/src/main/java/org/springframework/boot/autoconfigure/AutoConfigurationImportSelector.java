@@ -182,7 +182,7 @@ public class AutoConfigurationImportSelector
 	protected List<String> getCandidateConfigurations(AnnotationMetadata metadata,
 			AnnotationAttributes attributes) {
 		List<String> configurations = new ArrayList<>(
-				getExtensionResolver().resolveExtensionNames(
+				getAutoConfigurationResolver(getBeanClassLoader()).resolve(
 						getSpringFactoriesLoaderFactoryClass(), getBeanClassLoader()));
 		Assert.notEmpty(configurations,
 				"No auto configuration classes found in META-INF/spring.factories. If you "
@@ -348,6 +348,26 @@ public class AutoConfigurationImportSelector
 
 	protected final ConfigurableListableBeanFactory getBeanFactory() {
 		return this.beanFactory;
+	}
+
+	private AutoConfigurationResolver getAutoConfigurationResolver(
+			ClassLoader classLoader) {
+		if (this.extensionResolver == null) {
+			if (this.beanFactory != null) {
+				try {
+					this.extensionResolver = this.beanFactory
+							.getBean(ExtensionResolver.class);
+				}
+				catch (NoSuchBeanDefinitionException ex) {
+					// Continue
+				}
+			}
+			if (this.extensionResolver == null) {
+				this.extensionResolver = new SpringFactoriesExtensionResolver();
+			}
+		}
+		return new CompositeAutoConfigurationResolver(getExtensionResolver()
+				.resolveExtensions(AutoConfigurationResolver.class, classLoader));
 	}
 
 	protected final ExtensionResolver getExtensionResolver() {

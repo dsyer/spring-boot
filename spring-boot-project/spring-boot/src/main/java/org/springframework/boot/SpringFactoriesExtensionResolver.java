@@ -86,8 +86,7 @@ public class SpringFactoriesExtensionResolver implements ExtensionResolver {
 		return extensions;
 	}
 
-	@Override
-	public Set<String> resolveExtensionNames(Class<?> extensionClass,
+	private Set<String> resolveExtensionNames(Class<?> extensionClass,
 			ClassLoader classLoader) {
 		return new LinkedHashSet<>(
 				SpringFactoriesLoader.loadFactoryNames(extensionClass, classLoader));

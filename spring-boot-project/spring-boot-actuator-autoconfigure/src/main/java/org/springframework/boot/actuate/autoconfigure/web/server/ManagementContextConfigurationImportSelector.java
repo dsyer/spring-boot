@@ -30,6 +30,8 @@ import org.springframework.boot.ExtensionResolver;
 import org.springframework.boot.SpringFactoriesExtensionResolver;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
+import org.springframework.boot.autoconfigure.AutoConfigurationResolver;
+import org.springframework.boot.autoconfigure.CompositeAutoConfigurationResolver;
 import org.springframework.context.annotation.DeferredImportSelector;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.Ordered;
@@ -109,8 +111,11 @@ class ManagementContextConfigurationImportSelector
 	}
 
 	protected List<String> loadFactoryNames() {
-		return new ArrayList<>(this.extensionResolver.resolveExtensionNames(
-				ManagementContextConfiguration.class, this.classLoader));
+
+		return new ArrayList<>(new CompositeAutoConfigurationResolver(
+				this.extensionResolver.resolveExtensions(AutoConfigurationResolver.class,
+						this.classLoader)).resolve(ManagementContextConfiguration.class,
+								this.classLoader));
 	}
 
 	@Override

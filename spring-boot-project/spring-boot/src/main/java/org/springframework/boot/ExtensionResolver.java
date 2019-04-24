@@ -17,7 +17,6 @@
 package org.springframework.boot;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
@@ -76,14 +75,5 @@ public interface ExtensionResolver {
 	 */
 	<T> List<T> resolveExtensions(Class<T> extensionType, ClassLoader classLoader,
 			Class<?>[] parameterTypes, Object[] args);
-
-	/**
-	 * Resolves the name of the extensions of the given {@code extensionType} using the
-	 * given {@code classLoader}.
-	 * @param extensionType type of the extensions
-	 * @param classLoader class loader used to locate the extensions
-	 * @return names of the extensions
-	 */
-	Set<String> resolveExtensionNames(Class<?> extensionType, ClassLoader classLoader);
 
 }

@@ -81,8 +81,11 @@ public class AutoConfigurationExcludeFilter
 	protected List<String> getAutoConfigurations() {
 		if (this.autoConfigurations == null) {
 			this.autoConfigurations = new ArrayList<>(
-					this.extensionResolver.resolveExtensionNames(
-							EnableAutoConfiguration.class, this.beanClassLoader));
+					new CompositeAutoConfigurationResolver(this.extensionResolver
+							.resolveExtensions(AutoConfigurationResolver.class,
+									this.beanClassLoader)).resolve(
+											EnableAutoConfiguration.class,
+											this.beanClassLoader));
 		}
 		return this.autoConfigurations;
 	}
