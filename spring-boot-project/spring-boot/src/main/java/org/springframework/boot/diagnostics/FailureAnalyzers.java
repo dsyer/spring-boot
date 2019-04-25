@@ -43,7 +43,7 @@ import org.springframework.util.Assert;
  * @author Phillip Webb
  * @author Stephane Nicoll
  */
-final class FailureAnalyzers implements SpringBootExceptionReporter {
+public final class FailureAnalyzers implements SpringBootExceptionReporter {
 
 	private static final Log logger = LogFactory.getLog(FailureAnalyzers.class);
 
@@ -53,12 +53,12 @@ final class FailureAnalyzers implements SpringBootExceptionReporter {
 
 	private final List<FailureAnalyzer> analyzers;
 
-	FailureAnalyzers(SpringApplication application,
+	public FailureAnalyzers(SpringApplication application,
 			ConfigurableApplicationContext context) {
 		this(application, context, null);
 	}
 
-	FailureAnalyzers(SpringApplication application,
+	public FailureAnalyzers(SpringApplication application,
 			ConfigurableApplicationContext context, ClassLoader classLoader) {
 		Assert.notNull(context, "Context must not be null");
 		this.classLoader = (classLoader != null) ? classLoader : context.getClassLoader();

@@ -42,10 +42,12 @@ import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.boot.Banner.Mode;
+import org.springframework.boot.context.event.EventPublishingRunListener;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.convert.ApplicationConversionService;
+import org.springframework.boot.diagnostics.FailureAnalyzers;
 import org.springframework.boot.web.reactive.context.StandardReactiveWebEnvironment;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextInitializer;
@@ -313,7 +315,7 @@ public class SpringApplication {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		ConfigurableApplicationContext context = null;
-		Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList<>();
+		SpringBootExceptionReporter exceptionReporter = null;
 		configureHeadlessProperty();
 		SpringApplicationRunListeners listeners = getRunListeners(args);
 		listeners.starting();
@@ -325,10 +327,7 @@ public class SpringApplication {
 			configureIgnoreBeanInfo(environment);
 			Banner printedBanner = printBanner(environment);
 			context = createApplicationContext();
-			exceptionReporters = getExtensionInstances(SpringBootExceptionReporter.class,
-					new Class[] { SpringApplication.class,
-							ConfigurableApplicationContext.class },
-					this, context);
+			exceptionReporter = new FailureAnalyzers(this, context, getClassLoader());
 			prepareContext(context, environment, listeners, applicationArguments,
 					printedBanner);
 			refreshContext(context);
@@ -342,7 +341,7 @@ public class SpringApplication {
 			callRunners(context, applicationArguments);
 		}
 		catch (Throwable ex) {
-			handleRunFailure(context, ex, exceptionReporters, listeners);
+			handleRunFailure(context, ex, exceptionReporter, listeners);
 			throw new IllegalStateException(ex);
 		}
 
@@ -350,7 +349,7 @@ public class SpringApplication {
 			listeners.running(context);
 		}
 		catch (Throwable ex) {
-			handleRunFailure(context, ex, exceptionReporters, null);
+			handleRunFailure(context, ex, exceptionReporter, null);
 			throw new IllegalStateException(ex);
 		}
 		return context;
@@ -435,20 +434,13 @@ public class SpringApplication {
 	}
 
 	private SpringApplicationRunListeners getRunListeners(String[] args) {
-		Class<?>[] types = new Class<?>[] { SpringApplication.class, String[].class };
-		return new SpringApplicationRunListeners(logger, getExtensionInstances(
-				SpringApplicationRunListener.class, types, this, args));
+		return new SpringApplicationRunListeners(logger,
+				new EventPublishingRunListener(this, args));
 	}
 
 	private <T> Collection<T> getExtensionInstances(Class<T> type) {
-		return getExtensionInstances(type, new Class<?>[] {});
-	}
-
-	private <T> Collection<T> getExtensionInstances(Class<T> type,
-			Class<?>[] parameterTypes, Object... args) {
 		ClassLoader classLoader = getClassLoader();
-		return this.extensionResolver.resolveExtensions(type, classLoader, parameterTypes,
-				args);
+		return this.extensionResolver.resolveExtensions(type, classLoader);
 	}
 
 	private ConfigurableEnvironment getOrCreateEnvironment() {
@@ -825,8 +817,7 @@ public class SpringApplication {
 	}
 
 	private void handleRunFailure(ConfigurableApplicationContext context,
-			Throwable exception,
-			Collection<SpringBootExceptionReporter> exceptionReporters,
+			Throwable exception, SpringBootExceptionReporter exceptionReporter,
 			SpringApplicationRunListeners listeners) {
 		try {
 			try {
@@ -836,7 +827,7 @@ public class SpringApplication {
 				}
 			}
 			finally {
-				reportFailure(exceptionReporters, exception);
+				reportFailure(exceptionReporter, exception);
 				if (context != null) {
 					context.close();
 				}
@@ -848,14 +839,11 @@ public class SpringApplication {
 		ReflectionUtils.rethrowRuntimeException(exception);
 	}
 
-	private void reportFailure(Collection<SpringBootExceptionReporter> exceptionReporters,
-			Throwable failure) {
+	private void reportFailure(SpringBootExceptionReporter reporter, Throwable failure) {
 		try {
-			for (SpringBootExceptionReporter reporter : exceptionReporters) {
-				if (reporter.reportException(failure)) {
-					registerLoggedException(failure);
-					return;
-				}
+			if (reporter.reportException(failure)) {
+				registerLoggedException(failure);
+				return;
 			}
 		}
 		catch (Throwable ex) {

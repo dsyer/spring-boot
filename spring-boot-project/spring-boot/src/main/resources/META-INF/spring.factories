@@ -3,14 +3,6 @@ org.springframework.boot.env.PropertySourceLoader=\
 org.springframework.boot.env.PropertiesPropertySourceLoader,\
 org.springframework.boot.env.YamlPropertySourceLoader
 
-# Run Listeners
-org.springframework.boot.SpringApplicationRunListener=\
-org.springframework.boot.context.event.EventPublishingRunListener
-
-# Error Reporters
-org.springframework.boot.SpringBootExceptionReporter=\
-org.springframework.boot.diagnostics.FailureAnalyzers
-
 # Application Context Initializers
 org.springframework.context.ApplicationContextInitializer=\
 org.springframework.boot.context.ConfigurationWarningsApplicationContextInitializer,\
@@ -49,7 +41,7 @@ org.springframework.boot.diagnostics.analyzer.NoSuchMethodFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.PortInUseFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.ValidationExceptionFailureAnalyzer,\
- org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertiesFailureAnalyzer,\
+org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertiesFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyNameFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyValueFailureAnalyzer
 

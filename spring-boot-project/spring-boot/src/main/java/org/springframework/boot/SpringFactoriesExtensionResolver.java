@@ -38,38 +38,15 @@ import org.springframework.util.ReflectionUtils;
  */
 public class SpringFactoriesExtensionResolver implements ExtensionResolver {
 
-	private static final Class<?>[] NO_PARAMETER_TYPES = new Class<?>[0];
-
-	private static final Object[] NO_ARGS = new Object[0];
-
-	private static final BiConsumer<String, RuntimeException> defaultErrorHandler = (name,
-			ex) -> {
-		throw ex;
-	};
-
 	@Override
 	public <T> List<T> resolveExtensions(Class<T> extensionClass, ClassLoader classLoader,
 			BiConsumer<String, RuntimeException> errorHandler) {
-		return this.resolvedExtensions(extensionClass, classLoader, errorHandler,
-				NO_PARAMETER_TYPES, NO_ARGS);
-	}
-
-	@Override
-	public <T> List<T> resolveExtensions(Class<T> extensionClass, ClassLoader classLoader,
-			Class<?>[] parameterTypes, Object[] args) {
-		return this.resolvedExtensions(extensionClass, classLoader, defaultErrorHandler,
-				parameterTypes, args);
-	}
-
-	private <T> List<T> resolvedExtensions(Class<T> extensionClass,
-			ClassLoader classLoader, BiConsumer<String, RuntimeException> errorHandler,
-			Class<?>[] parameterTypes, Object[] args) {
 		Set<String> extensionNames = resolveExtensionNames(extensionClass, classLoader);
 		List<T> extensions = new ArrayList<>(extensionNames.size());
 		for (String extensionName : extensionNames) {
 			try {
-				extensions.add(instantiateExtension(extensionClass, extensionName,
-						classLoader, parameterTypes, args));
+				extensions.add(
+						instantiateExtension(extensionClass, extensionName, classLoader));
 			}
 			catch (RuntimeException ex) {
 				errorHandler.accept(extensionName, ex);
@@ -87,7 +64,7 @@ public class SpringFactoriesExtensionResolver implements ExtensionResolver {
 
 	@SuppressWarnings("unchecked")
 	private <T> T instantiateExtension(Class<T> extensionClass, String extensionClassName,
-			ClassLoader classLoader, Class<?>[] parameterTypes, Object[] args) {
+			ClassLoader classLoader) {
 		try {
 			Class<?> instanceClass = ClassUtils.forName(extensionClassName, classLoader);
 			if (!extensionClass.isAssignableFrom(instanceClass)) {
@@ -95,8 +72,7 @@ public class SpringFactoriesExtensionResolver implements ExtensionResolver {
 						+ "' is not assignable to '" + extensionClass.getName() + "'");
 			}
 			return (T) BeanUtils.instantiateClass(
-					ReflectionUtils.accessibleConstructor(instanceClass, parameterTypes),
-					args);
+					ReflectionUtils.accessibleConstructor(instanceClass));
 		}
 		catch (Throwable ex) {
 			throw new IllegalArgumentException("Unable to instantiate factory class '"

@@ -67,21 +67,4 @@ public interface ExtensionResolver {
 	<T> List<T> resolveExtensions(Class<T> extensionType, ClassLoader classLoader,
 			BiConsumer<String, RuntimeException> errorHandler);
 
-	/**
-	 * Resolves the extensions of the given {@code extensionType} using the given
-	 * {@code classLoader}. If the extensions need to be instantiated, the constructor
-	 * that accepts the given {@code parameterTypes} will be used.
-	 * @param extensionType type of the extensions
-	 * @param classLoader class loader to use to locate and, if necessary, load the
-	 * extensions
-	 * @param parameterTypes the constructor parameter types
-	 * @param args the constructor arguments
-	 * @param <T> type of the extensions
-	 * @return the extensions
-	 * @throws IllegalArgumentException if a problem occurs when loading any of the
-	 * extensions
-	 */
-	<T> List<T> resolveExtensions(Class<T> extensionType, ClassLoader classLoader,
-			Class<?>[] parameterTypes, Object[] args);
-
 }
