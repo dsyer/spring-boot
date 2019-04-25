@@ -17,6 +17,7 @@
 .recommenders
 .settings
 .springBeans
+.attach_pid*
 /build
 /code
 MANIFEST.MF

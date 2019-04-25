@@ -48,13 +48,6 @@ public class SpringFactoriesExtensionResolver implements ExtensionResolver {
 	};
 
 	@Override
-	public <T> List<T> resolveExtensions(Class<T> extensionType,
-			ClassLoader classLoader) {
-		return this.resolvedExtensions(extensionType, classLoader, defaultErrorHandler,
-				NO_PARAMETER_TYPES, NO_ARGS);
-	}
-
-	@Override
 	public <T> List<T> resolveExtensions(Class<T> extensionClass, ClassLoader classLoader,
 			BiConsumer<String, RuntimeException> errorHandler) {
 		return this.resolvedExtensions(extensionClass, classLoader, errorHandler,

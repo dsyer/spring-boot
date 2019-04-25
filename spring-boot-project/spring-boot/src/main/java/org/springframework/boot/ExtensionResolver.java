@@ -27,6 +27,11 @@ import java.util.function.BiConsumer;
  */
 public interface ExtensionResolver {
 
+	public static final BiConsumer<String, RuntimeException> defaultErrorHandler = (name,
+			ex) -> {
+		throw ex;
+	};
+
 	/**
 	 * Resolves the extensions of the given {@code extensionType} located using the given
 	 * {@code classLoader}. If the extensions need to be instantiated, their default
@@ -39,7 +44,10 @@ public interface ExtensionResolver {
 	 * @throws IllegalArgumentException if a problem occurs when loading any of the
 	 * extensions
 	 */
-	<T> List<T> resolveExtensions(Class<T> extensionType, ClassLoader classLoader);
+	default <T> List<T> resolveExtensions(Class<T> extensionType,
+			ClassLoader classLoader) {
+		return resolveExtensions(extensionType, classLoader, defaultErrorHandler);
+	}
 
 	/**
 	 * Resolves the extensions of the given {@code extensionType} located using the given
