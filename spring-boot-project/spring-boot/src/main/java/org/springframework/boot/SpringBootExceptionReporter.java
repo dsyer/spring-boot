@@ -17,13 +17,11 @@
 package org.springframework.boot;
 
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ConfigurableApplicationContext;
 
 /**
  * Callback interface used to support custom reporting of {@link SpringApplication}
- * startup errors. {@link SpringBootExceptionReporter reporters} are loaded via the
- * {@link ExtensionResolver} and must declare a public constructor with
- * {@link SpringApplication} and {@link ConfigurableApplicationContext} parameters.
+ * startup errors. {@link SpringBootExceptionReporter reporters} are loaded via a
+ * protected method in SpringApplication.
  *
  * @author Phillip Webb
  * @since 2.0.0

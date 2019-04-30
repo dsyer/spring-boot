@@ -315,9 +315,10 @@ public class SpringApplication {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		ConfigurableApplicationContext context = null;
-		SpringBootExceptionReporter exceptionReporter = null;
+		List<SpringBootExceptionReporter> exceptionReporters = null;
 		configureHeadlessProperty();
-		SpringApplicationRunListeners listeners = getRunListeners(args);
+		SpringApplicationRunListeners listeners = new SpringApplicationRunListeners(
+				logger, getRunListeners(args));
 		listeners.starting();
 		try {
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(
@@ -327,7 +328,7 @@ public class SpringApplication {
 			configureIgnoreBeanInfo(environment);
 			Banner printedBanner = printBanner(environment);
 			context = createApplicationContext();
-			exceptionReporter = new FailureAnalyzers(this, context, getClassLoader());
+			exceptionReporters = getExceptionReporters(context);
 			prepareContext(context, environment, listeners, applicationArguments,
 					printedBanner);
 			refreshContext(context);
@@ -341,7 +342,7 @@ public class SpringApplication {
 			callRunners(context, applicationArguments);
 		}
 		catch (Throwable ex) {
-			handleRunFailure(context, ex, exceptionReporter, listeners);
+			handleRunFailure(context, ex, exceptionReporters, listeners);
 			throw new IllegalStateException(ex);
 		}
 
@@ -349,10 +350,15 @@ public class SpringApplication {
 			listeners.running(context);
 		}
 		catch (Throwable ex) {
-			handleRunFailure(context, ex, exceptionReporter, null);
+			handleRunFailure(context, ex, exceptionReporters, null);
 			throw new IllegalStateException(ex);
 		}
 		return context;
+	}
+
+	protected List<SpringBootExceptionReporter> getExceptionReporters(
+			ConfigurableApplicationContext context) {
+		return Arrays.asList(new FailureAnalyzers(this, context, getClassLoader()));
 	}
 
 	private ConfigurableEnvironment prepareEnvironment(
@@ -433,9 +439,8 @@ public class SpringApplication {
 				SYSTEM_PROPERTY_JAVA_AWT_HEADLESS, Boolean.toString(this.headless)));
 	}
 
-	private SpringApplicationRunListeners getRunListeners(String[] args) {
-		return new SpringApplicationRunListeners(logger,
-				new EventPublishingRunListener(this, args));
+	protected List<SpringApplicationRunListener> getRunListeners(String[] args) {
+		return Arrays.asList(new EventPublishingRunListener(this, args));
 	}
 
 	private <T> Collection<T> getExtensionInstances(Class<T> type) {
@@ -817,7 +822,7 @@ public class SpringApplication {
 	}
 
 	private void handleRunFailure(ConfigurableApplicationContext context,
-			Throwable exception, SpringBootExceptionReporter exceptionReporter,
+			Throwable exception, List<SpringBootExceptionReporter> exceptionReporters,
 			SpringApplicationRunListeners listeners) {
 		try {
 			try {
@@ -827,7 +832,9 @@ public class SpringApplication {
 				}
 			}
 			finally {
-				reportFailure(exceptionReporter, exception);
+				for (SpringBootExceptionReporter exceptionReporter : exceptionReporters) {
+					reportFailure(exceptionReporter, exception);
+				}
 				if (context != null) {
 					context.close();
 				}

@@ -22,10 +22,9 @@ import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * Listener for the {@link SpringApplication} {@code run} method.
- * {@link SpringApplicationRunListener}s are loaded via the {@link ExtensionResolver} and
- * should declare a public constructor that accepts a {@link SpringApplication} instance
- * and a {@code String[]} of arguments. A new {@link SpringApplicationRunListener}
- * instance will be created for each run.
+ * {@link SpringApplicationRunListener}s are loaded via a protected method in
+ * SpringApplication. A new {@link SpringApplicationRunListener} instance will be created
+ * for each run.
  *
  * @author Phillip Webb
  * @author Dave Syer

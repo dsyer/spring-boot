@@ -27,8 +27,10 @@ import java.util.function.BiConsumer;
  */
 public interface ExtensionResolver {
 
-	public static final BiConsumer<String, RuntimeException> defaultErrorHandler = (name,
-			ex) -> {
+	/**
+	 * A default error handler that just rethrows the exception.
+	 */
+	BiConsumer<String, RuntimeException> defaultErrorHandler = (name, ex) -> {
 		throw ex;
 	};
 

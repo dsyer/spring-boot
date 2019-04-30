@@ -16,7 +16,7 @@
 
 package org.springframework.boot;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -36,9 +36,10 @@ class SpringApplicationRunListeners {
 
 	private final List<SpringApplicationRunListener> listeners;
 
-	SpringApplicationRunListeners(Log logger, SpringApplicationRunListener listener) {
+	SpringApplicationRunListeners(Log logger,
+			List<SpringApplicationRunListener> listeners) {
 		this.log = logger;
-		this.listeners = Arrays.asList(listener);
+		this.listeners = new ArrayList<>(listeners);
 	}
 
 	public void starting() {
