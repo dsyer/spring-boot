@@ -36,6 +36,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests for {@link HazelcastAutoConfiguration} specific to the client.
@@ -52,6 +53,7 @@ class HazelcastAutoConfigurationClientTests {
 
 	@BeforeAll
 	static void init() {
+		assumeTrue(System.getenv("GITHUB_CODESPACE_TOKEN") == null, "Running in Codespaces");
 		hazelcastServer = Hazelcast.newHazelcastInstance();
 	}
 

@@ -43,6 +43,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests for {@link HazelcastAutoConfiguration} when the client library is not present.
@@ -139,6 +140,7 @@ class HazelcastAutoConfigurationServerTests {
 	@Test
 	void configInstanceWithName() {
 		Config config = new Config("my-test-instance");
+		assumeTrue(System.getenv("GITHUB_CODESPACE_TOKEN") == null, "Running in Codespaces");
 		HazelcastInstance existing = Hazelcast.newHazelcastInstance(config);
 		try {
 			this.contextRunner.withUserConfiguration(HazelcastConfigWithName.class)
